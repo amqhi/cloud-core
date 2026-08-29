@@ -2,16 +2,16 @@
 #include <filesystem>
 #include <utility>
 
-#include "api.h"
 #include "database_provider.h"
 #include "date_time_utils.h"
 #include "json_utils.h"
 #include "network_error.h"
 #include "network_provider.h"
 #include "auth_tokens.h"
-#include "name_generator.h"
 #include "notifier.h"
+#include "platform_utils.h"
 #include "request_failure.h"
+#include "platform.h"
 
 namespace fs = std::filesystem;
 
@@ -33,13 +33,17 @@ Core::Core(std::string app_support_path, INetworkProvider& network_provider, ISe
     {
         if (entry.is_directory())
         {
-            User user;
-            user.local_id = entry.path().filename().string();
-            get_user_data(m_app_support_path, user);
-            m_users.push_back(user);
-            if (m_cached_state->get().selected_session == user.local_id)
+            const auto dir_name = entry.path().filename().string();
+            if (dir_name.size() == 1 && (dir_name[0] >= '0' && dir_name[0] <= '9'))
             {
-                m_selected_user_id = user.local_id;
+                User user;
+                user.local_id = dir_name[0];
+                get_user_data(m_app_support_path, user);
+                m_users.push_back(user);
+                if (m_cached_state->get().selected_session == user.local_id)
+                {
+                    m_selected_user_id = user.local_id;
+                }
             }
         }
     }
@@ -49,17 +53,15 @@ Core::Core(std::string app_support_path, INetworkProvider& network_provider, ISe
         if (m_users.empty())
         {
             User user;
-            user.local_id = name_generator::generated_directory_name(app_support_path);
+            user.local_id = created_user_local_id(m_users);
             m_users.push_back(user);
             m_selected_user_id = user.local_id;
-            m_cached_state->set_selected_user_id(m_selected_user_id);
         }
         else
         {
-            m_cached_state->set_selected_user_id(m_users[0].local_id);
             m_selected_user_id = m_users[0].local_id;
-            m_cached_state->set_selected_user_id(m_selected_user_id);
         }
+        m_cached_state->set_selected_user_id(m_selected_user_id);
     }
 
     m_settings = std::make_unique<Settings>(*this);
@@ -73,9 +75,9 @@ void Core::initialize()
     m_settings->get_data();
     m_cached_state->save();
     m_database_provider->initialize_database();
-    m_item_manager->fetch_items_from_cache(special_folder::HOME);
+    m_item_manager->initialize();
 
-    std::string tokens_string = m_secure_storage_provider.get_secure_string(m_selected_user_id, "");
+    std::string tokens_string = m_secure_storage_provider.get_secure_string(std::string_view(&m_selected_user_id, 1), "");
     if (!tokens_string.empty())
     {
         auto tokens_json = nlohmann::json::parse(tokens_string, nullptr, false);
@@ -104,6 +106,7 @@ bool Core::token_refresh_required() const
 
 void Core::destroy() const
 {
+    m_cached_state->save();
     m_database_provider->close();
 }
 
@@ -119,14 +122,14 @@ User* Core::selected_user()
 void Core::add_user()
 {
     User user;
-    user.local_id = name_generator::generated_directory_name(m_app_support_path);
+    user.local_id = created_user_local_id(m_users);
     m_users.push_back(user);
     m_selected_user_id = user.local_id;
     m_database_provider->close();
     initialize();
 }
 
-void Core::switch_user(const std::string& user_local_id)
+void Core::switch_user(char user_local_id)
 {
     m_selected_user_id = user_local_id;
     m_database_provider->close();
@@ -158,7 +161,7 @@ void Core::exchange_google_token(const std::string& id_token)
                 else
                 {
                     AuthTokens auth_tokens = AuthTokens::from_json(json);
-                    m_secure_storage_provider.set_secure_string(m_selected_user_id, auth_tokens.serialize());
+                    m_secure_storage_provider.set_secure_string(std::string_view(&m_selected_user_id, 1), auth_tokens.serialize());
                     selected_user()->access_token = auth_tokens.access_token;
                     selected_user()->refresh_token = auth_tokens.refresh_token;
                 }
@@ -197,7 +200,7 @@ void Core::refresh_tokens(const std::function<void()>& on_complete)
                 else
                 {
                     AuthTokens auth_tokens = AuthTokens::from_json(json);
-                    m_secure_storage_provider.set_secure_string(m_selected_user_id, auth_tokens.serialize());
+                    m_secure_storage_provider.set_secure_string(std::string_view(&m_selected_user_id, 1), auth_tokens.serialize());
                     selected_user()->access_token = auth_tokens.access_token;
                     selected_user()->refresh_token = auth_tokens.refresh_token;
                 }
@@ -207,7 +210,7 @@ void Core::refresh_tokens(const std::function<void()>& on_complete)
             {
                 selected_user()->access_token = "";
                 selected_user()->refresh_token = "";
-                m_secure_storage_provider.remove_secure_string(m_selected_user_id);
+                m_secure_storage_provider.remove_secure_string(std::string_view(&m_selected_user_id, 1));
                 m_notifier.notify(RE_LOGIN_REQUIRED);
                 on_complete();
             }
@@ -229,6 +232,9 @@ void Core::handle_login(const std::string& email, const std::string& password)
 {
     std::string url = m_settings->data().instance_url + "/auth/login";
     std::map<std::string, std::string> headers;
+    headers["X-Device-OS"] = platform::name();
+    headers["X-Device-Name"] = m_platform_utils.get_device_name();
+
     nlohmann::json body;
     body["email"] = email;
     body["password"] = password;
@@ -250,10 +256,10 @@ void Core::handle_login(const std::string& email, const std::string& password)
                 else
                 {
                      AuthTokens auth_tokens = AuthTokens::from_json(json);
-                     m_secure_storage_provider.set_secure_string(m_selected_user_id, auth_tokens.serialize());
+                     m_secure_storage_provider.set_secure_string(std::string_view(&m_selected_user_id, 1), auth_tokens.serialize());
                      selected_user()->access_token = auth_tokens.access_token;
                      selected_user()->refresh_token = auth_tokens.refresh_token;
-                    m_item_manager->fetch_items(special_folder::HOME);
+                    m_item_manager->refresh();
                     m_notifier.notify(LOGIN_SUCCESS);
                     fetch_user_info();
                 }
@@ -374,8 +380,9 @@ void Core::handle_register(const std::string& email, const std::string& password
 
 void Core::handle_logout()
 {
-    std::string url = m_settings->data().instance_url + "/auth/login";
+    std::string url = m_settings->data().instance_url + "/auth/logout";
     std::map<std::string, std::string> headers;
+    headers["Authorization"] = "Bearer " + selected_user()->access_token;
     nlohmann::json body;
     m_network_provider.post_json(
         url,
@@ -385,22 +392,38 @@ void Core::handle_logout()
         {
             if (status_code == 200)
             {
+                m_secure_storage_provider.remove_secure_string(std::string_view(&m_selected_user_id, 1));
+                fs::path user_dir_path = fs::path(m_app_support_path) / std::string_view(&m_selected_user_id, 1);
+                fs::remove_all(user_dir_path);
+                for (auto it = m_users.begin(); it != m_users.end(); ++it)
+                {
+                    if (it->local_id == m_selected_user_id)
+                    {
+                        m_users.erase(it);
+                        break;
+                    }
+                }
+                if (m_users.empty())
+                {
+                    User user;
+                    user.local_id = created_user_local_id(m_users);
+                    m_users.push_back(user);
+                    m_selected_user_id = user.local_id;
+                }
+                else
+                {
+                    m_selected_user_id = m_users[0].local_id;
+                }
+                initialize();
                 m_notifier.notify(LOGOUT_SUCCESS);
-                selected_user()->access_token = "";
-                selected_user()->refresh_token = "";
-                m_secure_storage_provider.remove_secure_string(m_selected_user_id);
             }
             else
             {
                 notify_request_failure(m_notifier, LOGIN_FAILURE, status_code, response);
             }
         }
-        , [](std::int16_t error_code, const std::string& data)
+        , [this](std::int16_t error_code, const std::string& data)
         {
+            handle_network_error(m_notifier, error_code, data);
         });
-}
-
-void Core::open_folder(const std::string& parent_id) const
-{
-    m_item_manager->fetch_items_from_cache(parent_id);
 }

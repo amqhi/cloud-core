@@ -18,11 +18,12 @@ class INotifier;
 class Core
 {
 public:
-  explicit Core(std::string app_support_path, INetworkProvider& network_provider, ISecureStorageProvider& secure_storage_provider, INotifier& notifier, IPlatformUtils& platform_utils);
-  void initialize();
+    explicit Core(std::string app_support_path, INetworkProvider& network_provider,
+                  ISecureStorageProvider& secure_storage_provider, INotifier& notifier, IPlatformUtils& platform_utils);
+    void initialize();
     [[nodiscard]] bool token_refresh_required() const;
 
-  void destroy() const;
+    void destroy() const;
 
     [[nodiscard]] ItemManager& item_manager() const { return *m_item_manager; }
     [[nodiscard]] Settings& settings() const { return *m_settings; }
@@ -30,28 +31,29 @@ public:
     [[nodiscard]] INetworkProvider& network_provider() const { return m_network_provider; }
     [[nodiscard]] INotifier& notifier() const { return m_notifier; }
     [[nodiscard]] IPlatformUtils& platform_utils() const { return m_platform_utils; }
-  [[nodiscard]] CachedState& cached_state() const { return *m_cached_state; }
+    [[nodiscard]] CachedState& cached_state() const { return *m_cached_state; }
 
     [[nodiscard]] User* selected_user();
-    [[nodiscard]] const std::vector<User>& users() {return m_users;}
+    [[nodiscard]] const std::vector<User>& users() { return m_users; }
 
-  [[nodiscard]] const std::string& app_support_path() const { return m_app_support_path; }
+    [[nodiscard]] const std::string& app_support_path() const { return m_app_support_path; }
 
-  void add_user();
-  void switch_user(const std::string& user_local_id);
+    void add_user();
+    void switch_user(char user_local_id);
     void exchange_google_token(const std::string& id_token);
     void refresh_tokens(const std::function<void()>& on_complete);
 
-  /** On first run */
-  void handle_login(const std::string& instance_url, const std::string& email, const std::string& password);
+    /** On first run */
+    void handle_login(const std::string& instance_url, const std::string& email, const std::string& password);
     void handle_login(const std::string& email, const std::string& password);
     void fetch_user_info();
 
-  /** On first run */
-  void handle_register(const std::string& instance_url, const std::string& email, const std::string& password, const std::string& name ) const;
-    void handle_register(const std::string& email, const std::string& password, const std::string& name ) const;
+    /** On first run */
+    void handle_register(const std::string& instance_url, const std::string& email, const std::string& password,
+                         const std::string& name) const;
+    void handle_register(const std::string& email, const std::string& password, const std::string& name) const;
     void handle_logout();
-    void open_folder(const std::string& parent_id) const;
+
 private:
     std::string m_app_support_path;
     INetworkProvider& m_network_provider;
@@ -64,8 +66,8 @@ private:
     std::unique_ptr<DatabaseProvider> m_database_provider;
     std::vector<User> m_users;
 
-    /** Local ID matching the randomly generated directory name, not the actual user ID. */
-    std::string m_selected_user_id;
+    /** Local ID matching the generated directory name, not the actual user ID. */
+    char m_selected_user_id;
 };
 
 #endif // CLOUD_CORE_H

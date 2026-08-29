@@ -3,7 +3,6 @@
 #include <filesystem>
 #include <sstream>
 #include "json.hpp"
-#include "utils/json_utils.h"
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -29,9 +28,11 @@ CachedState::CachedState(const std::string& app_support_path) : m_app_support_pa
             save();
             return;
         }
-        m_state.selected_session = json_utils::get_string(data, "selected_user_id");
 
-
+    if (auto it = data.find("selected_user_id"); it != data.end() && it->is_number_integer())
+    {
+         m_state.selected_session = it->get<char>();
+    }
 }
 
 void CachedState::save() const

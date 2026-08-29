@@ -4,6 +4,8 @@
 #include <map>
 #include <string>
 
+#include "item.h"
+
 namespace sort_option
 {
     /// A to Z
@@ -33,9 +35,9 @@ namespace sort_option
 }
 
 struct AppState {
-    std::string selected_session;
-    std::map<std::string, int8_t> sort_options;
-    std::map<std::string, int8_t> view_modes;
+    std::unordered_map<ItemId, int8_t> sort_options;
+    std::unordered_map<ItemId, int8_t> view_modes;
+    char selected_session;
 };
 
 class CachedState {
@@ -43,16 +45,16 @@ public:
     explicit CachedState(const std::string& app_support_path);
     [[nodiscard]] const AppState& get() const { return m_state; }
 
-    void set_sort_option(const std::string& folder_id, int8_t option) {
+    void set_sort_option(const ItemId& folder_id, int8_t option) {
         m_state.sort_options[folder_id] = option;
     }
 
-    void set_view_mode(const std::string& folder_id, int8_t mode)
+    void set_view_mode(const ItemId& folder_id, int8_t mode)
     {
         m_state.view_modes[folder_id] = mode;
     }
 
-    void set_selected_user_id(const std::string& user_id) {
+    void set_selected_user_id(char user_id) {
         m_state.selected_session = user_id;
     }
 

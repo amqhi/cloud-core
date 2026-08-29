@@ -3,7 +3,6 @@
 #include "core.h"
 #include <fstream>
 #include <filesystem>
-#include <iostream>
 #include <algorithm>
 
 #include "api.h"
@@ -17,8 +16,7 @@
 #include "date_time_utils.h"
 #include "item_utils.h"
 #include "map_utils.h"
-#include "common_api.h"
-#include "json_utils.h"
+#include "sqlite_utils.h"
 #include "sync_event.h"
 
 namespace fs = std::filesystem;
@@ -28,19 +26,50 @@ ItemManager::ItemManager(Core& core) : m_core(core)
 {
 }
 
-std::map<std::string, Item> ItemManager::items() const
+const std::vector<ItemId>& ItemManager::id_list_by_id(const ItemId& parent_id)
 {
-    return m_items;
+    return m_id_lists[parent_id];
 }
 
-std::map<std::string, std::vector<std::string>> ItemManager::id_lists() const
+const Item& ItemManager::item_by_id(const ItemId& id)
 {
-    return m_id_lists;
+    return m_items[id];
 }
 
-std::map<std::string, FileMetadata> ItemManager::file_metadata_map() const
+const FileMetadata& ItemManager::file_metadata_by_id(const ItemId& id)
 {
-    return m_file_metadata_map;
+    return m_file_metadata[id];
+}
+
+void ItemManager::initialize()
+{
+    Sqlite3Stmt stmt;
+    const char* sql = "SELECT * FROM items;";
+
+    if (stmt.prepare(m_core.database_provider().database(), sql) != SQLITE_OK)
+    {
+        m_core.notifier().notify(DATABASE_ERROR, std::string(sqlite3_errmsg(m_core.database_provider().database())));
+        return;
+    }
+
+    while (stmt.step() == SQLITE_ROW)
+    {
+        Item item = item_from_stmt(stmt.stmt);
+
+        m_items[item.id] = item;
+        m_id_lists[item.parent_id].push_back(item.id);
+    }
+
+    Sqlite3Stmt files_stmt;
+
+    sql = "SELECT * FROM items;";
+    files_stmt.prepare(m_core.database_provider().database(), sql);
+    while (files_stmt.step() == SQLITE_ROW)
+    {
+        FileMetadata file_metadata = file_metadata_from_stmt(files_stmt.stmt);
+
+        m_file_metadata[file_metadata.id] = file_metadata;
+    }
 }
 
 void ItemManager::sync()
@@ -61,140 +90,53 @@ void ItemManager::sync()
     });
 }
 
-void ItemManager::fetch_items_from_cache(const std::string& parent_id)
+// TODO: Make this safe against race conditions (e.g., database)
+void ItemManager::refresh()
 {
-    if (map_utils::contains_key(m_id_lists, parent_id))
-    {
-        m_id_lists.clear();
-    }
-    sqlite3_stmt* stmt;
-    std::string sql;
-    if (parent_id == special_folder::HOME)
-    {
-        sql = "SELECT * FROM items WHERE parent_id IS NULL AND deleted_at IS NULL;";
-    }
-    else if (parent_id == special_folder::TRASH)
-    {
-        sql = "SELECT * FROM items WHERE parent_id IS NULL AND deleted_at IS NOT NULL;";
-    }
-    else
-    {
-        sql = "SELECT * FROM items WHERE parent_id = '" + parent_id + "';";
-    }
-
-    if (sqlite3_prepare_v2(m_core.database_provider().database(), sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
-    {
-        m_core.notifier().notify(DATABASE_ERROR, std::string(sqlite3_errmsg(m_core.database_provider().database())));
-        return;
-    }
-    while (sqlite3_step(stmt) == SQLITE_ROW)
-    {
-        Item item = item_from_stmt(stmt);
-        m_id_lists[item.parent_id].push_back(item.id);
-        m_items[item.id] = std::move(item);
-    }
-    sqlite3_finalize(stmt);
-
-    stmt = nullptr;
-    if (parent_id == special_folder::HOME || parent_id == special_folder::TRASH)
-    {
-        sql = R"(SELECT
-    i.id,
-    f.checksum,
-    f.size,
-    f.mime_type
-FROM items i
-INNER JOIN files f ON i.id = f.id
-WHERE i.parent_id IS NULL;)";
-
-        if (sqlite3_prepare_v2(m_core.database_provider().database(), sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
-        {
-            m_core.notifier().notify(DATABASE_ERROR, std::string(sqlite3_errmsg(m_core.database_provider().database())));
-            return;
-        }
-
-        while (sqlite3_step(stmt) == SQLITE_ROW)
-        {
-            FileMetadata file_meta = file_metadata_from_stmt(stmt);
-            m_file_metadata_map[file_meta.id] = std::move(file_meta);
-        }
-        sqlite3_finalize(stmt);
-    }
-    else
-    {
-        sql = R"(SELECT
-                i.id,
-                f.checksum,
-                f.size,
-                f.mime_type
-            FROM items i
-            INNER JOIN files f ON i.id = f.id
-            WHERE i.parent_id = ?;)";
-
-        if (sqlite3_prepare_v2(m_core.database_provider().database(), sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
-        {
-            m_core.notifier().notify(DATABASE_ERROR, std::string(sqlite3_errmsg(m_core.database_provider().database())));
-            return;
-        }
-
-        sqlite3_bind_text(stmt, 1, parent_id.c_str(), -1, SQLITE_TRANSIENT);
-
-        while (sqlite3_step(stmt) == SQLITE_ROW)
-        {
-            FileMetadata file_meta = file_metadata_from_stmt(stmt);
-            m_file_metadata_map[file_meta.id] = std::move(file_meta);
-        }
-        sqlite3_finalize(stmt);
-    }
-}
-
-void ItemManager::fetch_items(const std::string& parent_id)
-{
-    std::string status = parent_id == special_folder::TRASH ? "deleted" : "active";
-    std::string url = parent_id == special_folder::HOME || parent_id == special_folder::TRASH
-                          ? m_core.settings().data().instance_url + "/items?status=" + status
-                          : m_core.settings().data().instance_url + "/items?parent_id=" + parent_id + "&status=" +
-                          status;
+    std::string url = m_core.settings().data().instance_url + "/items?status=all";
     std::map<std::string, std::string> headers;
     headers["Authorization"] = "Bearer " + m_core.selected_user()->access_token;
 
     m_core.network_provider().get(
         url,
         headers,
-        [this, parent_id, url](int status_code, const std::string& response)
+        [this, url](int status_code, const std::string& response)
         {
             if (status_code == 200)
             {
                 auto body = json::parse(response, nullptr, false);
                 if (!body.is_discarded() && body.is_array())
                 {
-                    m_id_lists[parent_id] = std::vector<std::string>{};
                     for (const auto& element : body)
                     {
                         Item item = item_from_json(element);
-                        if (item.type == item_type::FILE && !map_utils::contains_key(m_file_metadata_map, item.id))
+                        if (!map_utils::contains_key(m_items, item.id))
                         {
-                            api::files::get_file_metadata(m_core, item.id, [this](FileMetadata& file_metadata)
+                            m_id_lists[item.parent_id].push_back(item.id);
+                            item.save(m_core.database_provider().database());
+
+                            if (item.type == item_type::FILE)
                             {
-                                cache_file_metadata(m_core.database_provider().database(), file_metadata);
-                                m_file_metadata_map[file_metadata.id] = std::move(file_metadata);
-                            });
+                                api::files::get_file_metadata(m_core, item.id.to_string(), [this](FileMetadata& file_metadata)
+                                {
+                                    cache_file_metadata(m_core.database_provider().database(), file_metadata);
+                                    m_file_metadata[file_metadata.id] = std::move(file_metadata);
+                                });
+                            }
+                            m_items[item.id] = std::move(item);
                         }
-                        m_id_lists[parent_id].push_back(item.id);
-                        m_items[item.id] = std::move(item);
                     }
-                    sort_items(parent_id);
-                    cache_metadata_of_items(parent_id);
-                    m_core.notifier().notify(ITEMS_FETCH_SUCCESS, parent_id);
+                    sort_items(special_folder::HOME);
+                    m_core.notifier().notify(REFRESH_SUCCESS);
                 }
                 else
                 {
-                    notify_request_failure(m_core.notifier(), ITEMS_FETCH_FAILURE, status_code, response, url);
+                    notify_request_failure(m_core.notifier(), REFRESH_FAILURE, status_code, response, url);
                 }
             }
             else
             {
-                notify_request_failure(m_core.notifier(), ITEMS_FETCH_FAILURE, status_code, response, url);
+                notify_request_failure(m_core.notifier(), REFRESH_FAILURE, status_code, response, url);
             }
         }
         , [this](std::int16_t error_code, const std::string& data)
@@ -203,117 +145,13 @@ void ItemManager::fetch_items(const std::string& parent_id)
         });
 }
 
-void ItemManager::purge_items(const std::string& parent_id)
+void ItemManager::sort_items(std::int8_t option, const ItemId& parent_id)
 {
-    if (!map_utils::contains_key(m_items, parent_id))
-    {
-        return;
-    }
-    for (const auto& id : m_id_lists[parent_id])
-    {
-        m_items.erase(id);
-        m_file_metadata_map.erase(id);
-    }
-    m_id_lists.erase(parent_id);
+    m_core.cached_state().set_sort_option(parent_id, option);
+    sort_items(parent_id);
 }
 
-void ItemManager::cache_metadata_of_items(const std::string& parent_id)
-{
-    if (m_items.empty()) return;
-
-    char* err_msg = nullptr;
-    if (sqlite3_exec(m_core.database_provider().database(), "BEGIN TRANSACTION;", nullptr, nullptr, &err_msg) !=
-        SQLITE_OK)
-    {
-        sqlite3_free(err_msg);
-        return;
-    }
-
-    const char* sql =
-        "INSERT OR REPLACE INTO items (id, type, created_at, updated_at, event_at, deleted_at, parent_id, name, tags, comment, encrypted, app_scope) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
-    sqlite3_stmt* stmt = nullptr;
-
-    if (sqlite3_prepare_v2(m_core.database_provider().database(), sql, -1, &stmt, nullptr) != SQLITE_OK)
-    {
-        m_core.notifier().notify(DATABASE_ERROR, std::string(sqlite3_errmsg(m_core.database_provider().database())));
-        sqlite3_exec(m_core.database_provider().database(), "ROLLBACK;", nullptr, nullptr, nullptr);
-        return;
-    }
-
-    for (const auto& id : m_id_lists[parent_id])
-    {
-        const auto& item = m_items[id];
-        sqlite_bind_item(stmt, item);
-
-        if (sqlite3_step(stmt) != SQLITE_DONE)
-        {
-            m_core.notifier().notify(DATABASE_ERROR,
-                                    std::string(sqlite3_errmsg(m_core.database_provider().database())));
-        }
-
-        sqlite3_reset(stmt);
-        sqlite3_clear_bindings(stmt);
-    }
-
-    // 4. 자원 해제 및 트랜잭션 커밋 (실제 디스크 쓰기 발생)
-    sqlite3_finalize(stmt);
-
-    if (sqlite3_exec(m_core.database_provider().database(), "COMMIT;", nullptr, nullptr, &err_msg) != SQLITE_OK)
-    {
-        std::cerr << "Failed to commit transaction: " << err_msg << std::endl;
-        sqlite3_free(err_msg);
-        sqlite3_exec(m_core.database_provider().database(), "ROLLBACK;", nullptr, nullptr, nullptr);
-    }
-}
-
-const std::vector<std::string>& ItemManager::id_list_by_id(const std::string& id)
-{
-    return m_id_lists[id];
-}
-
-std::vector<ItemSummary> ItemManager::summary_list_by_id(const std::string& id)
-{
-    auto list_it = m_id_lists.find(id);
-    if (list_it == m_id_lists.end())
-    {
-        return {};
-    }
-
-    const auto& child_ids = list_it->second;
-    std::vector<ItemSummary> list;
-
-    list.reserve(child_ids.size());
-
-    for (const auto& itemId : child_ids)
-    {
-        auto item_it = m_items.find(itemId);
-        if (item_it == m_items.end())
-        {
-            continue;
-        }
-
-        const Item& current_item = item_it->second;
-
-        ItemSummary summary = item_to_summary(m_core, current_item);
-
-        list.push_back(std::move(summary));
-    }
-
-    return list;
-}
-
-const Item& ItemManager::item_by_id(const std::string& id)
-{
-    return m_items[id];
-}
-
-const FileMetadata& ItemManager::file_metadata_by_id(const std::string& id)
-{
-    return m_file_metadata_map[id];
-}
-
-void ItemManager::sort_items(const std::string& parent_id)
+void ItemManager::sort_items(const ItemId& parent_id)
 {
     if (m_id_lists.find(parent_id) != m_id_lists.end())
     {
@@ -330,49 +168,49 @@ void ItemManager::sort_items(const std::string& parent_id)
         {
         case sort_option::NAME_ASC:
             std::sort(id_list.begin(), id_list.end(),
-                [this](const std::string& a, const std::string& b) {
+                [this](const ItemId& a, const ItemId& b) {
                     return m_items[a].name < m_items[b].name;
                 });
             break;
 
         case sort_option::NAME_DESC:
             std::sort(id_list.begin(), id_list.end(),
-                [this](const std::string& a, const std::string& b) {
+                [this](const ItemId& a, const ItemId& b) {
                     return m_items[a].name > m_items[b].name;
                 });
             break;
 
         case sort_option::CREATED_AT_ASC:
             std::sort(id_list.begin(), id_list.end(),
-                [this](const std::string& a, const std::string& b) {
+                [this](const ItemId& a, const ItemId& b) {
                     return m_items[a].created_at < m_items[b].created_at;
                 });
             break;
 
         case sort_option::CREATED_AT_DESC:
             std::sort(id_list.begin(), id_list.end(),
-                [this](const std::string& a, const std::string& b) {
+                [this](const ItemId& a, const ItemId& b) {
                     return m_items[a].created_at > m_items[b].created_at;
                 });
             break;
 
         case sort_option::UPDATED_AT_ASC:
             std::sort(id_list.begin(), id_list.end(),
-                [this](const std::string& a, const std::string& b) {
+                [this](const ItemId& a, const ItemId& b) {
                     return m_items[a].updated_at < m_items[b].updated_at;
                 });
             break;
 
         case sort_option::UPDATED_AT_DESC:
             std::sort(id_list.begin(), id_list.end(),
-                [this](const std::string& a, const std::string& b) {
+                [this](const ItemId& a, const ItemId& b) {
                     return m_items[a].updated_at > m_items[b].updated_at;
                 });
             break;
 
         case sort_option::SIZE_ASC:
             std::sort(id_list.begin(), id_list.end(),
-                [this](const std::string& a, const std::string& b) {
+                [this](const ItemId& a, const ItemId& b) {
                     return m_items[a].updated_at < m_items[b].updated_at;
                 });
             break;
@@ -380,21 +218,21 @@ void ItemManager::sort_items(const std::string& parent_id)
             // TODO: sort items by size
         case sort_option::SIZE_DESC:
             std::sort(id_list.begin(), id_list.end(),
-                [this](const std::string& a, const std::string& b) {
+                [this](const ItemId& a, const ItemId& b) {
                     return m_items[a].updated_at > m_items[b].updated_at;
                 });
             break;
 
         case sort_option::TYPE_ASC:
             std::sort(id_list.begin(), id_list.end(),
-                [this](const std::string& a, const std::string& b) {
+                [this](const ItemId& a, const ItemId& b) {
                     return m_items[a].type < m_items[b].type;
                 });
             break;
 
         case sort_option::TYPE_DESC:
             std::sort(id_list.begin(), id_list.end(),
-                [this](const std::string& a, const std::string& b) {
+                [this](const ItemId& a, const ItemId& b) {
                     return m_items[a].type > m_items[b].type;
                 });
             break;
@@ -451,7 +289,8 @@ void ItemManager::create_file(const ItemAttributes& item_attributes, const std::
                                                                json data;
                                                                data["bytes_written"] = bytes_written;
                                                                data["total_bytes"] = total_bytes;
-                                                               data["id"] = item.id;
+                                                               data["id_high"] = item.id.high;
+                                                               data["id_low"] = item.id.low;
                                                                data["name"] = item.name;
                                                                data["type"] = transfer_type::FILE;
                                                                m_core.notifier().notify(UPLOAD_PROGRESS, data);
@@ -499,7 +338,7 @@ void ItemManager::create_file(const ItemAttributes& item_attributes, const std::
                                                                json data;
                                                                data["bytes_written"] = bytes_written;
                                                                data["total_bytes"] = total_bytes;
-                                                               data["id"] = item.id;
+                                                               data["id_high"] = item.id.high;data["id_low"] = item.id.low;
                                                                data["name"] = item.name;
                                                                data["type"] = transfer_type::FILE;
                                                                m_core.notifier().notify(UPLOAD_PROGRESS, data);
@@ -578,8 +417,8 @@ void ItemManager::create_folder(const ItemAttributes& item_attributes)
                                                    item.save(m_core.database_provider().database());
                                                    apply_create_item(item);
                                                    json data;
-                                                   data["id"] = item.id;
-                                                   data["parent_id"] = item.parent_id;
+                                                   data["id_high"] = item.id.high;data["id_low"] = item.id.low;
+                                                   data["parent_id_high"] = item.parent_id.high;data["parent_id_low"] = item.parent_id.low;
                                                    data["type"] = item.type;
                                                    m_core.notifier().notify(ITEM_CREATE_SUCCESS, data);
                                                }
@@ -599,7 +438,7 @@ void ItemManager::complete_upload_multipart(const Item& item, const std::string&
                                             const std::string& mime_type, const std::string& upload_id,
                                             const json& parts)
 {
-    std::string url = m_core.settings().data().instance_url + "/files/" + item.id + "/complete";
+    std::string url = m_core.settings().data().instance_url + "/files/" + item.id.to_string() + "/complete";
     std::map<std::string, std::string> headers;
     nlohmann::json body;
     headers["Content-Type"] = "application/json";
@@ -625,8 +464,8 @@ void ItemManager::complete_upload_multipart(const Item& item, const std::string&
                                                m_items[item.id] = item;
                                                m_id_lists[item.parent_id].push_back(item.id);
                                                json data;
-                                               data["id"] = item.id;
-                                               data["parent_id"] = item.parent_id;
+                                               data["id_high"] = item.id.high;data["id_low"] = item.id.low;
+                                               data["parent_id_high"] = item.parent_id.high;data["parent_id_low"] = item.parent_id.low;
                                                m_core.notifier().notify(ITEM_CREATE_SUCCESS, data);
                                                download_thumbnail(item.id);
                                            }
@@ -644,7 +483,7 @@ void ItemManager::complete_upload_multipart(const Item& item, const std::string&
 void ItemManager::complete_upload(const Item& item, const std::string& checksum, std::uint64_t size,
                                   const std::string& mime_type)
 {
-    std::string url = m_core.settings().data().instance_url + "/files/" + item.id + "/complete";
+    std::string url = m_core.settings().data().instance_url + "/files/" + item.id.to_string() + "/complete";
     std::map<std::string, std::string> headers;
     nlohmann::json body;
     headers["Content-Type"] = "application/json";
@@ -668,8 +507,8 @@ void ItemManager::complete_upload(const Item& item, const std::string& checksum,
                                                m_items[item.id] = item;
                                                m_id_lists[item.parent_id].push_back(item.id);
                                                json data;
-                                               data["id"] = item.id;
-                                               data["parent_id"] = item.parent_id;
+                                               data["id_high"] = item.id.high;data["id_low"] = item.id.low;
+                                               data["parent_id_high"] = item.parent_id.high;data["parent_id_low"] = item.parent_id.low;
                                                m_core.notifier().notify(ITEM_CREATE_SUCCESS, data);
                                                download_thumbnail(item.id);
                                            }
@@ -685,9 +524,9 @@ void ItemManager::complete_upload(const Item& item, const std::string& checksum,
                                        });
 }
 
-void ItemManager::update_item(const std::string& id, const ItemAttributes& item_attributes)
+void ItemManager::update_item(const ItemId& id, const ItemAttributes& item_attributes)
 {
-    std::string url = m_core.settings().data().instance_url + "/items/" + id;
+    std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string();
     std::map<std::string, std::string> headers;
     headers["Content-Type"] = "application/json";
     headers["Authorization"] = "Bearer " + m_core.selected_user()->access_token;
@@ -700,11 +539,16 @@ void ItemManager::update_item(const std::string& id, const ItemAttributes& item_
                                         {
                                             if (status_code == 200)
                                             {
-                                                m_items[id].update(item_attributes);
+                                                m_items[id].name = item_attributes.name;
+                                                m_items[id].parent_id = item_attributes.parent_id;
+                                                m_items[id].app_scope = item_attributes.app_scope;
+                                                m_items[id].comment = item_attributes.comment;
+                                                m_items[id].event_at = item_attributes.event_at;
+                                                m_items[id].encrypted = item_attributes.encrypted;
                                                 m_items[id].save(m_core.database_provider().database());
                                                 json data;
-                                                data["id"] = id;
-                                                data["parent_id"] = m_items[id].parent_id;
+                                                data["id_high"] = id.high;data["id_low"] = id.low;
+                                                data["parent_id_high"] = m_items[id].parent_id.high; data["parent_id_low"] = m_items[id].parent_id.low;
                                                 sort_items(m_items[id].parent_id);
                                                 m_core.notifier().notify(ITEM_UPDATE_SUCCESS, data);
                                             }
@@ -721,16 +565,17 @@ void ItemManager::update_item(const std::string& id, const ItemAttributes& item_
                                         });
 }
 
-void ItemManager::move_item(const std::string& id, const std::string& parent_id)
+void ItemManager::move_item(const ItemId& id, const ItemId& parent_id)
 {
-    std::string url = m_core.settings().data().instance_url + "/items/" + id + "/move";
+    std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string() + "/move";
     std::map<std::string, std::string> headers;
     headers["Content-Type"] = "application/json";
     headers["Authorization"] = "Bearer " + m_core.selected_user()->access_token;
     nlohmann::json body;
     if (parent_id != special_folder::TRASH && parent_id != special_folder::HOME)
     {
-        body["parent_id"] = parent_id;
+        body["parent_id_high"] = parent_id.high;
+        body["parent_id_low"] = parent_id.low;
     }
     m_core.network_provider().patch_json(url,
                                         headers,
@@ -739,11 +584,13 @@ void ItemManager::move_item(const std::string& id, const std::string& parent_id)
                                         {
                                             if (status_code == 200)
                                             {
-                                                std::string old_parent_id = m_items[id].parent_id;
+                                                ItemId old_parent_id = m_items[id].parent_id;
                                                 json data;
-                                                data["id"] = id;
-                                                data["parent_id"] = parent_id;
-                                                data["old_parent_id"] = old_parent_id;
+                                                data["id_high"] = id.high;
+                                                data["id_low"] = id.low;
+                                                data["parent_id_high"] = parent_id.high; data["parent_id_low"] = parent_id.low;
+                                                data["old_parent_id_high"] = old_parent_id.high;
+                                                data["old_parent_id_low"] = old_parent_id.low;
                                                 m_items[id].parent_id = parent_id;
                                                 m_items[id].save(m_core.database_provider().database());
                                                 apply_move_item(id, old_parent_id, parent_id);
@@ -762,9 +609,9 @@ void ItemManager::move_item(const std::string& id, const std::string& parent_id)
                                         });
 }
 
-void ItemManager::rename_item(const std::string& id, const std::string& name)
+void ItemManager::rename_item(const ItemId& id, const std::string& name)
 {
-    std::string url = m_core.settings().data().instance_url + "/items/" + id;
+    std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string();
     std::map<std::string, std::string> headers;
     headers["Content-Type"] = "application/json";
     headers["Authorization"] = "Bearer " + m_core.selected_user()->access_token;
@@ -778,9 +625,14 @@ void ItemManager::rename_item(const std::string& id, const std::string& name)
                                         {
                                             if (status_code == 200)
                                             {
+                                                nlohmann::json data;
                                                 m_items[id].name = name;
                                                 m_items[id].save(m_core.database_provider().database());
-                                                m_core.notifier().notify(ITEM_UPDATE_SUCCESS, id);
+                                                data["id_high"] = id.high;
+                                                data["id_low"] = id.low;
+                                                data["parent_id_high"] = m_items[id].parent_id.high;
+                                                data["parent_id_low"] = m_items[id].parent_id.low;
+                                                m_core.notifier().notify(ITEM_UPDATE_SUCCESS, data);
                                             }
                                             else
                                             {
@@ -794,9 +646,9 @@ void ItemManager::rename_item(const std::string& id, const std::string& name)
                                         });
 }
 
-void ItemManager::soft_delete_item(const std::string& id)
+void ItemManager::soft_delete_item(const ItemId& id)
 {
-    std::string url = m_core.settings().data().instance_url + "/items/" + id;
+    std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string();
     std::map<std::string, std::string> headers;
     headers["Content-Type"] = "application/json";
     headers["Authorization"] = "Bearer " + m_core.selected_user()->access_token;
@@ -807,16 +659,23 @@ void ItemManager::soft_delete_item(const std::string& id)
                                      {
                                          if (status_code == 200)
                                          {
-                                             std::string old_parent_id = m_items[id].parent_id;
+                                             ItemId old_parent_id = m_items[id].parent_id;
                                              m_items[id].deleted_at = current_date_time_utc_int64();
                                              m_items[id].parent_id = special_folder::TRASH;
                                              m_items[id].save(m_core.database_provider().database());
                                              apply_move_item(id, old_parent_id, special_folder::TRASH);
-                                             m_core.notifier().notify(ITEM_UPDATE_SUCCESS, id);
+                                             nlohmann::json data;
+                                             data["id_high"] = id.high;
+                                               data["id_low"] = id.low;
+                                               data["parent_id_high"] = m_items[id].parent_id.high;
+                                               data["parent_id_low"] = m_items[id].parent_id.low;
+                                             data["old_parent_id_high"] = old_parent_id.high;
+                                                data["old_parent_id_low"] = old_parent_id.low;
+                                               m_core.notifier().notify(ITEM_SOFT_DELETE_SUCCESS, data);
                                          }
                                          else
                                          {
-                                             notify_request_failure(m_core.notifier(), ITEM_UPDATE_FAILURE, status_code,
+                                             notify_request_failure(m_core.notifier(), ITEM_SOFT_DELETE_FAILURE, status_code,
                                                                     response);
                                          }
                                      }, [this](std::int16_t error_code, const std::string& data)
@@ -825,9 +684,9 @@ void ItemManager::soft_delete_item(const std::string& id)
                                      });
 }
 
-void ItemManager::restore_item(const std::string& id)
+void ItemManager::restore_item(const ItemId& id)
 {
-    std::string url = m_core.settings().data().instance_url + "/items/" + id + "/restore";
+    std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string() + "/restore";
     std::map<std::string, std::string> headers;
     nlohmann::json body;
     headers["Content-Type"] = "application/json";
@@ -840,15 +699,25 @@ void ItemManager::restore_item(const std::string& id)
                                        {
                                            if (status_code == 200)
                                            {
-                                               std::string old_parent_id = m_items[id].parent_id;
+                                               ItemId old_parent_id = m_items[id].parent_id;
                                                nlohmann::json body = json::parse(response, nullptr, false);
                                                m_items[id].deleted_at = std::nullopt;
-                                               m_items[id].parent_id = json_utils::get_string(body, "parent_id", special_folder::HOME);
+                                               if (auto it = body.find("parent_id"); it != body.end() && it->is_string())
+                                               {
+                                                   m_items[id].parent_id = ItemId::from_string(it->get<std::string>());
+                                               }
+                                               else
+                                               {
+                                                   m_items[id].parent_id = special_folder::HOME;
+                                               }
+
                                                m_items[id].save(m_core.database_provider().database());
                                                nlohmann::json data;
-                                               data["id"] = id;
-                                               data["parent_id"] = m_items[id].parent_id;
-                                               data["old_parent_id"] = old_parent_id;
+                                               data["id_high"] = id.high;data["id_low"] = id.low;
+                                               data["parent_id_high"] = m_items[id].parent_id.high; data["parent_id_low"] = m_items[id].parent_id.low;
+                                               data["old_parent_id_high"] = old_parent_id.high;
+                                                     data["old_parent_id_low"] = old_parent_id.low;
+
                                                apply_move_item(id, old_parent_id, m_items[id].parent_id);
                                                m_core.notifier().notify(ITEM_RESTORE_SUCCESS, data);
                                            }
@@ -865,9 +734,9 @@ void ItemManager::restore_item(const std::string& id)
                                        });
 }
 
-void ItemManager::delete_item(const std::string& id)
+void ItemManager::delete_item(const ItemId& id)
 {
-    std::string url = m_core.settings().data().instance_url + "/items/" + id + "/permanent";
+    std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string() + "/permanent";
     std::map<std::string, std::string> headers;
     headers["Content-Type"] = "application/json";
     headers["Authorization"] = "Bearer " + m_core.selected_user()->access_token;
@@ -878,18 +747,18 @@ void ItemManager::delete_item(const std::string& id)
                                      {
                                          if (status_code == 200)
                                          {
-                                             std::string parent_id = m_items[id].parent_id;
+                                             ItemId parent_id = m_items[id].parent_id;
                                              item_delete_on_local(m_core, m_items[id]);
                                              if (m_items[id].type == item_type::FILE)
                                              {
-                                                 delete_file_metadata(m_core.database_provider().database(), m_file_metadata_map[id]);
+                                                 delete_file_metadata(m_core.database_provider().database(), m_file_metadata[id]);
                                              }
                                              apply_delete_item(id, m_items[id].parent_id);
                                              nlohmann::json data;
-                                             data["id"] = id;
-                                             data["parent_id"] = parent_id;
+                                             data["id_high"] = id.high;data["id_low"] = id.low;
+                                             data["parent_id_high"] = parent_id.high; data["parent_id_low"] = parent_id.low;
 
-                                             m_core.notifier().notify(ITEM_DELETED, id);
+                                             m_core.notifier().notify(ITEM_DELETED, data);
                                          }
                                          else
                                          {
@@ -903,9 +772,9 @@ void ItemManager::delete_item(const std::string& id)
                                      });
 }
 
-void ItemManager::download_thumbnail(const std::string& id) const
+void ItemManager::download_thumbnail(const ItemId& id) const
 {
-    std::string url = m_core.settings().data().instance_url + "/items/" + id + "/thumbnail";
+    std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string() + "/thumbnail";
     std::map<std::string, std::string> headers;
     headers["Authorization"] = "Bearer " + m_core.selected_user()->access_token;
     m_core.network_provider().get(url,
@@ -936,12 +805,13 @@ void ItemManager::download_thumbnail(const std::string& id) const
                                                   }
                                                   else
                                                   {
-                                                      std::map<std::string, std::string> args;
-                                                      args["status_code"] = std::to_string(status_code);
-                                                      args["response"] = response;
-                                                      args["id"] = id;
-                                                      args["url"] = download_url;
-                                                      m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, args);
+                                                      nlohmann::json data;
+                                                      data["status_code"] = std::to_string(status_code);
+                                                      data["response"] = response;
+                                                      data["id_high"] = id.high;
+                                               data["id_low"] = id.low;
+                                                      data["url"] = download_url;
+                                                      m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
                                                   }
                                               }, [](std::int16_t error_code, const std::string& data)
                                               {
@@ -949,19 +819,20 @@ void ItemManager::download_thumbnail(const std::string& id) const
                                       }
                                       else
                                       {
-                                          std::map<std::string, std::string> args;
-                                          args["status_code"] = std::to_string(status_code);
-                                          args["response"] = response;
-                                          args["id"] = id;
-                                          args["url"] = url;
-                                          m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, args);
+                                          nlohmann::json data;
+                                          data["status_code"] = std::to_string(status_code);
+                                          data["response"] = response;
+                                          data["id_high"] = id.high;
+                                                   data["id_low"] = id.low;
+                                          data["url"] = url;
+                                          m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
                                       }
                                   }, [](std::int16_t error_code, const std::string& data)
                                   {
                                   });
 }
 
-void ItemManager::cache_item(const std::string& id)
+void ItemManager::cache_item(const ItemId& id)
 {
     std::string file_path = item_local_file_path(m_core, id).string();
     download_item(id, file_path, [this, id](int status_code, const std::string& response)
@@ -970,9 +841,9 @@ void ItemManager::cache_item(const std::string& id)
         {
             json data;
             m_items[id].cached = true;
-            data["id"] = id;
-            data["parent_id"] = m_items[id].parent_id;
-            m_core.notifier().notify(ITEM_CACHE_SUCCESS, id);
+            data["id_high"] = id.high;data["id_low"] = id.low;
+            data["parent_id_high"] = m_items[id].parent_id.high; data["parent_id_low"] = m_items[id].parent_id.low;
+            m_core.notifier().notify(ITEM_CACHE_SUCCESS, data);
         }
         else
         {
@@ -982,17 +853,18 @@ void ItemManager::cache_item(const std::string& id)
     });
 }
 
-void ItemManager::cache_item_external(const std::string& id)
-{
-}
-
-void ItemManager::download_item(const std::string& id, const std::string& file_path) const
+void ItemManager::download_item(const ItemId& id, const std::string& file_path)
 {
     download_item(id, file_path, [this, id](int status_code, const std::string& response)
     {
         if (status_code == 200)
         {
-            m_core.notifier().notify(FILE_DOWNLOAD_SUCCESS, id);
+            nlohmann::json data;
+                                             data["id_high"] = id.high;
+                                             data["id_low"] = id.low;
+            data["parent_id_high"] = m_items[id].parent_id.high;
+            data["parent_id_low"] = m_items[id].parent_id.low;
+            m_core.notifier().notify(FILE_DOWNLOAD_SUCCESS, data);
         }
         else
         {
@@ -1002,13 +874,12 @@ void ItemManager::download_item(const std::string& id, const std::string& file_p
     });
 }
 
-void ItemManager::download_item(const std::string& id, const std::string& file_path,
+void ItemManager::download_item(const ItemId& id, const std::string& file_path,
                                 const std::function<void(int status_code, const std::string& response)>& on_response)
-const
 {
     api::files::get_download_url(
         m_core,
-        id,
+        id.to_string(),
         [this, id, file_path, on_response](int status_code, const std::string& response)
         {
             if (status_code == 200)
@@ -1022,7 +893,10 @@ const
                         json data;
                         data["bytes_received"] = bytes_received;
                         data["total_bytes"] = total_bytes;
-                        data["id"] = id;
+                        data["id_high"] = id.high;
+                        data["id_low"] = id.low;
+                        data["parent_id_high"] = m_items[id].parent_id.high;
+         data["parent_id_low"] = m_items[id].parent_id.low;
                         data["type"] = transfer_type::FILE;
                         m_core.notifier().notify(DOWNLOAD_PROGRESS, data);
                     }, on_response, [this](std::int16_t error_code, const std::string& data)
@@ -1042,22 +916,22 @@ const
         });
 }
 
-void ItemManager::fetch_file_download_url(const std::string& id) const
+void ItemManager::fetch_file_download_url(const ItemId& id) const
 {
-    api::files::get_download_url(m_core, id, [this, id](int status_code, const std::string& response)
+    api::files::get_download_url(m_core, id.to_string(), [this, id](int status_code, const std::string& response)
                                  {
                                      if (status_code == 200)
                                      {
                                          const std::string& download_url = response;
                                          json data;
-                                         data["id"] = id;
+                                         data["id_high"] = id.high;data["id_low"] = id.low;
                                          data["url"] = download_url;
                                          m_core.notifier().notify(FETCH_FILE_DOWNLOAD_URL_SUCCESS, data);
                                      }
                                      else
                                      {
                                          json data;
-                                         data["id"] = id;
+                                         data["id_high"] = id.high;data["id_low"] = id.low;
                                          m_core.notifier().notify(FETCH_FILE_DOWNLOAD_URL_FAILURE, data);
                                      }
                                  },
@@ -1093,11 +967,11 @@ void ItemManager::sync_next_event()
                         item.save(m_core.database_provider().database());
                         if (item.type == item_type::FILE)
                         {
-                            api::files::get_file_metadata(m_core, item.id, [this, item, event](FileMetadata& file_metadata)
+                            api::files::get_file_metadata(m_core, item.id.to_string(), [this, item, event](FileMetadata& file_metadata)
                            {
                               cache_file_metadata(m_core.database_provider().database(), file_metadata);
                                apply_create_item(item);
-                               m_file_metadata_map[file_metadata.id] = std::move(file_metadata);
+                               m_file_metadata[file_metadata.id] = std::move(file_metadata);
                                api::sync::consume_event(m_core, event.id, [](int status_code, const std::string& response)
                                {
 
@@ -1112,11 +986,11 @@ void ItemManager::sync_next_event()
                         }
                         else
                         {
-                            api::files::get_file_metadata(m_core, item.id, [this, item, event](FileMetadata& file_metadata)
+                            api::files::get_file_metadata(m_core, item.id.to_string(), [this, item, event](FileMetadata& file_metadata)
                        {
                           cache_file_metadata(m_core.database_provider().database(), file_metadata);
                            apply_create_item(item);
-                           m_file_metadata_map[file_metadata.id] = std::move(file_metadata);
+                           m_file_metadata[file_metadata.id] = std::move(file_metadata);
                            api::sync::consume_event(m_core, event.id, [](int status_code, const std::string& response)
                            {
                                if (status_code != 200)
@@ -1158,7 +1032,7 @@ void ItemManager::apply_update_item(const Item& item)
     m_items[item.id] = item;
 }
 
-void ItemManager::apply_move_item(const std::string& id, const std::string& old_parent_id, const std::string& parent_id)
+void ItemManager::apply_move_item(const ItemId& id, const ItemId& old_parent_id, const ItemId& parent_id)
 {
     m_items[id].parent_id = parent_id;
     if (m_id_lists.find(old_parent_id) != m_id_lists.end())
@@ -1175,7 +1049,7 @@ void ItemManager::apply_move_item(const std::string& id, const std::string& old_
     sort_items(m_items[id].parent_id);
 }
 
-void ItemManager::apply_delete_item(const std::string& id, const std::string& parent_id)
+void ItemManager::apply_delete_item(const ItemId& id, const ItemId& parent_id)
 {
     if (map_utils::contains_key(m_id_lists, parent_id))
     {

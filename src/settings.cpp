@@ -19,7 +19,7 @@ Settings::Settings(Core& core) : m_core(core)
 
 void Settings::get_data()
 {
-    fs::path file_path = fs::path(m_core.app_support_path()) /  m_core.selected_user()->local_id/ "settings";
+    fs::path file_path = fs::path(m_core.app_support_path()) / std::string_view(& m_core.selected_user()->local_id, 1) / "settings";
 
     if (!std::filesystem::exists(file_path)) {
         m_data.instance_url = settings_defaults::BACKEND_URL;
@@ -52,7 +52,7 @@ void Settings::save() const
     auto user = m_core.selected_user();
     if (!user) return;
 
-    fs::path file_path = fs::path(m_core.app_support_path()) / user->local_id / "settings";
+    fs::path file_path = fs::path(m_core.app_support_path()) / std::string_view(&user->local_id, 1) / "settings";
 
     std::error_code ec;
     fs::create_directories(file_path.parent_path(), ec);

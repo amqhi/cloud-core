@@ -6,7 +6,7 @@ namespace fs = std::filesystem;
 
 void DatabaseProvider::initialize_database()
 {
-    std::filesystem::path user_dir = std::filesystem::path(m_core.app_support_path()) / m_core.selected_user()->local_id;
+    std::filesystem::path user_dir = std::filesystem::path(m_core.app_support_path()) / std::string_view(&m_core.selected_user()->local_id, 1);
 
     fs::create_directories(user_dir);
 
@@ -19,13 +19,13 @@ void DatabaseProvider::initialize_database()
            "PRAGMA foreign_keys = ON;"
 
            "CREATE TABLE IF NOT EXISTS items ("
-           "  id TEXT PRIMARY KEY NOT NULL, "
+           "  id BLOB PRIMARY KEY NOT NULL, "
            "  type TEXT NOT NULL, "
            "  created_at INTEGER NOT NULL, "
            "  updated_at INTEGER NOT NULL, "
            "  event_at INTEGER, "
            "  deleted_at INTEGER, "
-           "  parent_id TEXT, "
+           "  parent_id BLOB, "
            "  name TEXT, "
            "  tags TEXT, "
            "  comment TEXT, "
@@ -38,7 +38,7 @@ void DatabaseProvider::initialize_database()
            "CREATE INDEX IF NOT EXISTS idx_items_parent_id ON items(parent_id);"
 
            "CREATE TABLE IF NOT EXISTS themes ("
-           "  id TEXT PRIMARY KEY NOT NULL, "
+           "  id BLOB PRIMARY KEY NOT NULL, "
            "  title TEXT NOT NULL, "
            "  created_at INTEGER NOT NULL, "
            "  updated_at INTEGER NOT NULL, "
@@ -47,7 +47,7 @@ void DatabaseProvider::initialize_database()
            ");"
 
            "CREATE TABLE IF NOT EXISTS files ("
-           "  id TEXT PRIMARY KEY NOT NULL, "
+           "  id BLOB PRIMARY KEY NOT NULL, "
            "  checksum TEXT NOT NULL, "
            "  size INTEGER NOT NULL, "
            "  mime_type TEXT NOT NULL, "

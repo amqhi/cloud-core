@@ -42,7 +42,7 @@ void api::files::get_file_metadata(Core& core, const std::string& id,
             if (!body.is_discarded())
             {
                 FileMetadata file_metadata;
-                file_metadata.id = json_utils::get_string(body, "id");
+                file_metadata.id = ItemId::from_string(json_utils::get_string(body, "id"));
                 file_metadata.checksum = json_utils::get_string(body, "checksum");
                 file_metadata.size = json_utils::get_int64_t(body, "size");
                 file_metadata.mime_type = json_utils::get_string(body, "mime_type");
