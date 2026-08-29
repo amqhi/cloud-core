@@ -24,13 +24,13 @@ set(CLOUD_SOURCES
 )
 
 set(CLOUD_JAVA_BINDING_INCLUDE_DIRS
-        ${CMAKE_CURRENT_LIST_DIR}/java
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java
 )
 
 set(CLOUD_JAVA_BINDING_SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/java/java_binding.cpp
-        ${CMAKE_CURRENT_LIST_DIR}/java/java_network_provider.h
-        ${CMAKE_CURRENT_LIST_DIR}/java/java_notifier.h
-        ${CMAKE_CURRENT_LIST_DIR}/java/java_platform_utils.h
-        ${CMAKE_CURRENT_LIST_DIR}/java/java_secure_storage_provider.h
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_binding.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_network_provider.h
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_notifier.h
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_platform_utils.h
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_secure_storage_provider.h
 )
