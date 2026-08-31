@@ -62,7 +62,7 @@ void ItemManager::initialize()
 
     Sqlite3Stmt files_stmt;
 
-    sql = "SELECT * FROM items;";
+    sql = "SELECT * FROM files;";
     files_stmt.prepare(m_core.database_provider().database(), sql);
     while (files_stmt.step() == SQLITE_ROW)
     {
