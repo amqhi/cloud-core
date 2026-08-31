@@ -232,12 +232,12 @@ void Core::handle_login(const std::string& email, const std::string& password)
 {
     std::string url = m_settings->data().instance_url + "/auth/login";
     std::map<std::string, std::string> headers;
-    headers["X-Device-OS"] = platform::name();
-    headers["X-Device-Name"] = m_platform_utils.get_device_name();
 
     nlohmann::json body;
     body["email"] = email;
     body["password"] = password;
+    body["device_name"] = m_platform_utils.get_device_name();
+    body["device_os"] = platform::name();
     m_network_provider.post_json(
         url,
         headers,
