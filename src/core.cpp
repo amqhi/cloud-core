@@ -242,6 +242,7 @@ void Core::handle_login(const std::string& email, const std::string& password)
     body["password"] = password;
     body["device_name"] = m_platform_utils.get_device_name();
     body["device_os"] = platform::name();
+    body["app_type"] = "cloud";
     m_network_provider.post_json(
         url,
         headers,
