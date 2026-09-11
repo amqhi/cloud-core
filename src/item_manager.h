@@ -71,15 +71,10 @@ public:
 
 private:
     Core& m_core;
-    std::queue<SyncEvent> m_event_queue;
-    bool m_is_processing = false;
-    std::mutex m_queue_mutex;
 
     std::unordered_map<ItemId, Item> m_items;
     std::unordered_map<ItemId, std::vector<ItemId>> m_id_lists;
     std::unordered_map<ItemId, FileMetadata> m_file_metadata;
-
-    void sync_next_event();
 
     // Prefix 'apply_' indicates mutating internal state (m_items, m_id_lists)
     void apply_create_item(const Item& item);

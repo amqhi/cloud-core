@@ -99,39 +99,8 @@ void api::sync::get_sync_events(Core& core, const OnResponse& on_response, const
     get_sync_events(core.settings().data().instance_url, core.selected_user()->access_token, core.network_provider(), on_response, on_failure);
 }
 
-void api::sync::get_sync_events(Core& core, const std::function<void(const std::vector<SyncEvent>& sync_events)>& on_success)
-{
-    get_sync_events(core, [&core, on_success](int status_code, const std::string& response)
-    {
-        if (status_code == 200)
-        {
-            nlohmann::json body = nlohmann::json::parse(response, nullptr, false);
-            if (!body.is_discarded() && body.is_array())
-            {
-                std::vector<SyncEvent> events;
-                for (auto& item : body)
-                {
-                    events.push_back(sync_event_from_json(item));
-                }
-                on_success(events);
-            }
-            else
-            {
-                notify_request_failure(core.notifier(), SYNC_EVENTS_FETCH_FAILURE, status_code, response);
-            }
-        }
-        else
-        {
-            notify_request_failure(core.notifier(), SYNC_EVENTS_FETCH_FAILURE, status_code, response);
-        }
-    }, [&core](std::int16_t error_code, const std::string& data)
-                    {
-        handle_network_error(core.notifier(), error_code, data);
-                    });
-}
-
-void api::sync::consume_event(Core& core, const std::string& event_id, const OnResponse& on_response,
+void api::sync::acknowledge_events(Core& core, const std::vector<std::string>& item_ids, const OnResponse& on_response,
     const OnFailure& on_failure)
 {
-    consume_event(event_id, core.settings().data().instance_url, core.selected_user()->access_token, core.network_provider(), on_response, on_failure);
+    acknowledge_events(item_ids, core.settings().data().instance_url, core.selected_user()->access_token, core.network_provider(), on_response, on_failure);
 }

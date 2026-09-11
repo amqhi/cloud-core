@@ -10,7 +10,6 @@
 
 #include "file_metadata.h"
 
-struct SyncEvent;
 class Core;
 
 using OnResponse = std::function<void(int status_code, const std::string& response)>;
@@ -24,12 +23,9 @@ namespace api
             Core& core,
             const OnResponse& on_response,
             const OnFailure& on_failure);
-        void get_sync_events(
+        void acknowledge_events(
             Core& core,
-            const std::function<void(const std::vector<SyncEvent>& sync_events)>& on_success);
-        void consume_event(
-            Core& core,
-            const std::string& event_id,
+            const std::vector<std::string>& item_ids,
             const OnResponse& on_response,
             const OnFailure& on_failure);
     }
