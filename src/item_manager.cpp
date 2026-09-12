@@ -90,7 +90,6 @@ void ItemManager::sync()
                                            {
                                                const auto& events = it->get<nlohmann::json>();
                                                std::vector<std::string> item_ids;
-                                               item_ids.reserve(events.size());
                                                for (const auto& event : events)
                                                {
                                                    SyncEventType event_type = string_to_sync_event_type(
@@ -1097,10 +1096,7 @@ void ItemManager::fetch_file_download_url(const ItemId& id) const
 void ItemManager::apply_create_item(const Item& item)
 {
     m_items[item.id] = item;
-    if (map_utils::contains_key(m_id_lists, item.parent_id))
-    {
-        m_id_lists[item.parent_id].emplace_back(item.id);
-    }
+    m_id_lists[item.parent_id].emplace_back(item.id);
     sort_items(item.parent_id);
 }
 
