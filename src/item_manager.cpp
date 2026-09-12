@@ -65,6 +65,11 @@ void ItemManager::initialize()
         m_id_lists[item.parent_id].push_back(item.id);
     }
 
+    for (const auto& pair : m_id_lists)
+    {
+        sort_items(pair.first);
+    }
+
     Sqlite3Stmt files_stmt;
 
     sql = "SELECT * FROM files;";
