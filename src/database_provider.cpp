@@ -20,43 +20,44 @@ void DatabaseProvider::initialize_database()
     if (exit == SQLITE_OK) {
 
         const char* schema_sql =
-           "PRAGMA foreign_keys = ON;"
+           R"(
+            PRAGMA foreign_keys = ON;
+            CREATE TABLE IF NOT EXISTS items (
+             id BLOB PRIMARY KEY NOT NULL,
+             type TEXT NOT NULL,
+             created_at INTEGER NOT NULL,
+             updated_at INTEGER NOT NULL,
+             event_at INTEGER,
+             deleted_at INTEGER,
+             parent_id BLOB, 
+             name TEXT,
+             tags TEXT,
+             comment TEXT,
+             encrypted INTEGER DEFAULT 0,
+             app_scope INTEGER NOT NULL DEFAULT 63,
+             cached BOOLEAN,
+             FOREIGN KEY(parent_id) REFERENCES items(id) ON DELETE CASCADE
+           );
 
-           "CREATE TABLE IF NOT EXISTS items ("
-           "  id BLOB PRIMARY KEY NOT NULL, "
-           "  type TEXT NOT NULL, "
-           "  created_at INTEGER NOT NULL, "
-           "  updated_at INTEGER NOT NULL, "
-           "  event_at INTEGER, "
-           "  deleted_at INTEGER, "
-           "  parent_id BLOB, "
-           "  name TEXT, "
-           "  tags TEXT, "
-           "  comment TEXT, "
-           "  encrypted INTEGER DEFAULT 0, "
-           "  app_scope INTEGER NOT NULL DEFAULT 63, "
-           "  cached BOOLEAN, "
-           "  FOREIGN KEY(parent_id) REFERENCES items(id) ON DELETE CASCADE"
-           ");"
+           CREATE INDEX IF NOT EXISTS idx_items_parent_id ON items(parent_id);
 
-           "CREATE INDEX IF NOT EXISTS idx_items_parent_id ON items(parent_id);"
+           CREATE TABLE IF NOT EXISTS themes (
+             id BLOB PRIMARY KEY NOT NULL,
+             title TEXT NOT NULL,
+             created_at INTEGER NOT NULL,
+             updated_at INTEGER NOT NULL,
+             data TEXT NOT NULL,
+             FOREIGN KEY(id) REFERENCES items(id) ON DELETE CASCADE
+           );
 
-           "CREATE TABLE IF NOT EXISTS themes ("
-           "  id BLOB PRIMARY KEY NOT NULL, "
-           "  title TEXT NOT NULL, "
-           "  created_at INTEGER NOT NULL, "
-           "  updated_at INTEGER NOT NULL, "
-           "  data TEXT NOT NULL, "
-           "  FOREIGN KEY(id) REFERENCES items(id) ON DELETE CASCADE"
-           ");"
-
-           "CREATE TABLE IF NOT EXISTS files ("
-           "  id BLOB PRIMARY KEY NOT NULL, "
-           "  checksum TEXT NOT NULL, "
-           "  size INTEGER NOT NULL, "
-           "  mime_type TEXT NOT NULL, "
-           "  FOREIGN KEY(id) REFERENCES items(id) ON DELETE CASCADE"
-           ");";
+           CREATE TABLE IF NOT EXISTS files (
+             id BLOB PRIMARY KEY NOT NULL,
+             checksum TEXT NOT NULL,
+             size INTEGER NOT NULL,
+             mime_type TEXT NOT NULL,
+             FOREIGN KEY(id) REFERENCES items(id) ON DELETE CASCADE
+           );
+        )";
 
         sqlite3_exec(m_database, schema_sql, nullptr, nullptr, nullptr);
     }
