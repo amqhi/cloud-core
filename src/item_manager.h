@@ -10,6 +10,7 @@
 #include <functional>
 
 #include "file_metadata.h"
+#include "folder_metadata.h"
 #include "json.hpp"
 
 #include "item_attributes.h"
@@ -75,6 +76,8 @@ private:
     std::unordered_map<ItemId, Item> m_items;
     std::unordered_map<ItemId, std::vector<ItemId>> m_id_lists;
     std::unordered_map<ItemId, FileMetadata> m_file_metadata;
+    // TODO: Implement CRUD for folder customization
+    std::unordered_map<ItemId, FolderMetadata> m_folder_metadata;
 
     // Prefix 'apply_' indicates mutating internal state (m_items, m_id_lists)
     void apply_create_item(const Item& item);
