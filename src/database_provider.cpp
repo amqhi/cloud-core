@@ -29,7 +29,7 @@ void DatabaseProvider::initialize_database()
              updated_at INTEGER NOT NULL,
              event_at INTEGER,
              deleted_at INTEGER,
-             parent_id BLOB, 
+             parent_id BLOB,
              name TEXT,
              tags TEXT,
              comment TEXT,
@@ -55,6 +55,17 @@ void DatabaseProvider::initialize_database()
              checksum TEXT NOT NULL,
              size INTEGER NOT NULL,
              mime_type TEXT NOT NULL,
+             FOREIGN KEY(id) REFERENCES items(id) ON DELETE CASCADE
+           );
+
+           CREATE TABLE IF NOT EXISTS folders (
+             id BLOB PRIMARY KEY NOT NULL,
+             background_id BLOB,
+             background_color INTEGER,
+             icon_id BLOB,
+             icon_color INTEGER,
+             FOREIGN KEY(background_id) REFERENCES items(id) ON DELETE SET NULL,
+             FOREIGN KEY(icon_id) REFERENCES items(id) ON DELETE SET NULL,
              FOREIGN KEY(id) REFERENCES items(id) ON DELETE CASCADE
            );
         )";
