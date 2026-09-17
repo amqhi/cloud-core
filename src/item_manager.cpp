@@ -10,6 +10,7 @@
 #include <algorithm>
 
 #include "api.h"
+#include "common_api.h"
 #include "mime_utils.h"
 #include "network_error.h"
 #include "network_provider.h"
@@ -117,17 +118,22 @@ void ItemManager::sync()
                                                            delete_item(item.id);
                                                            apply_delete_item(item.id, item.parent_id);
                                                            break;
-                                                           default:
+                                                       default:
                                                            item.save(m_core.database_provider().database());
-                                                           if (auto pair = m_items.find(item.id); pair != m_items.end()) // If the item is already exists
+                                                           if (auto pair = m_items.find(item.id); pair != m_items.end())
+                                                           // If the item is already exists
                                                            {
                                                                auto& existing_item = pair->second;
 
-                                                               if (existing_item.parent_id != item.parent_id || item.deleted_at != existing_item.deleted_at) // Handle move or soft-delete or restore
+                                                               if (existing_item.parent_id != item.parent_id || item.
+                                                                   deleted_at != existing_item.deleted_at)
+                                                               // Handle move or soft-delete or restore
                                                                {
                                                                    ItemId old_parent_id = existing_item.parent_id;
                                                                    m_items[item_id] = std::move(item);
-                                                                   apply_move_item(item_id, old_parent_id, m_items[item_id].parent_id);
+                                                                   apply_move_item(
+                                                                       item_id, old_parent_id,
+                                                                       m_items[item_id].parent_id);
                                                                }
                                                                else // Handle update
                                                                {
@@ -149,7 +155,9 @@ void ItemManager::sync()
                                                        case item_type::FILE:
                                                            {
                                                                auto file_metadata = file_metadata_from_json(item_data);
-                                                               cache_file_metadata(m_core.database_provider().database(), file_metadata);
+                                                               cache_file_metadata(
+                                                                   m_core.database_provider().database(),
+                                                                   file_metadata);
                                                                break;
                                                            }
                                                        default:
@@ -161,20 +169,23 @@ void ItemManager::sync()
                                                if (!item_ids.empty())
                                                {
                                                    api::sync::acknowledge_events(m_core, item_ids,
-                                                                   [this](int status_code,
-                                                                   const std::string& response)
-                                                                   {
-                                                                       if (status_code != 200)
-                                                                       {
-                                                                           notify_request_failure(m_core.notifier(), ACKNOWLEDGE_SYNC_EVENTS_FETCH_FAILURE,
-                                                       status_code, response);
-                                                                       }
-                                                                   }, [this](int error_code,
-                                                                   const std::string& data)
-                                                                   {
-                                                                       notify_request_failure(m_core.notifier(), ACKNOWLEDGE_SYNC_EVENTS_FETCH_FAILURE,
-                                                       error_code, data);
-                                                                   });
+                                                       [this](int status_code,
+                                                              const std::string& response)
+                                                       {
+                                                           if (status_code != 200)
+                                                           {
+                                                               notify_request_failure(
+                                                                   m_core.notifier(),
+                                                                   ACKNOWLEDGE_SYNC_EVENTS_FETCH_FAILURE,
+                                                                   status_code, response);
+                                                           }
+                                                       }, [this](int error_code,
+                                                                 const std::string& data)
+                                                       {
+                                                           notify_request_failure(
+                                                               m_core.notifier(), ACKNOWLEDGE_SYNC_EVENTS_FETCH_FAILURE,
+                                                               error_code, data);
+                                                       });
                                                }
                                            }
 
@@ -203,63 +214,116 @@ void ItemManager::sync()
                                });
 }
 
-// TODO: Make this safe against race conditions (e.g., database)
+// TODO: Handle paginated items during refresh
 void ItemManager::refresh()
 {
-    std::string url = m_core.settings().data().instance_url + "/items?status=all";
-    std::map<std::string, std::string> headers;
-    headers["Authorization"] = "Bearer " + m_core.selected_user()->access_token;
+    api::files::get_files(m_core.settings().data().instance_url, m_core.selected_user()->access_token,
+                          m_core.network_provider(),
+                          [this](int status_code, const std::string& response)
+                          {
+                              if (status_code == 200)
+                              {
+                                  auto files_body = json::parse(response, nullptr, false);
+                                  if (files_body.is_discarded() || !files_body.is_object())
+                                  {
+                                      notify_request_failure(m_core.notifier(), REFRESH_FAILURE, status_code,
+                                                             response);
+                                  }
+                                  else
+                                  {
+                                      // bool has_more_files = json_utils::get_bool(files_body, "has_more", false);
+                                      // if (has_more_files)
+                                      // {
+                                      //
+                                      // }
+                                      if (auto it = files_body.find("files"); it != files_body.end() && it->is_array())
+                                      {
+                                          for (auto& child : *it)
+                                          {
+                                              Item item = item_from_json(child);
+                                              FileMetadata file_metadata = file_metadata_from_json(child);
+                                              const auto item_id = item.id;
+                                              const auto parent_id = item.parent_id;
 
-    m_core.network_provider().get(
-        url,
-        headers,
-        [this, url](int status_code, const std::string& response)
-        {
-            if (status_code == 200)
-            {
-                auto body = json::parse(response, nullptr, false);
-                if (!body.is_discarded() && body.is_array())
-                {
-                    for (const auto& element : body)
-                    {
-                        Item item = item_from_json(element);
-                        if (!map_utils::contains_key(m_items, item.id))
-                        {
-                            m_id_lists[item.parent_id].push_back(item.id);
-                            item.save(m_core.database_provider().database());
+                                              item.save(m_core.database_provider().database());
+                                              cache_file_metadata(m_core.database_provider().database(), file_metadata);
 
-                            if (item.type == item_type::FILE)
-                            {
-                                api::files::get_file_metadata(m_core, item.id.to_string(),
-                                                              [this](FileMetadata& file_metadata)
-                                                              {
-                                                                  cache_file_metadata(
-                                                                      m_core.database_provider().database(),
-                                                                      file_metadata);
-                                                                  m_file_metadata[file_metadata.id] = std::move(
-                                                                      file_metadata);
-                                                              });
-                            }
-                            m_items[item.id] = std::move(item);
-                        }
-                    }
-                    sort_items(special_folder::HOME);
-                    m_core.notifier().notify(REFRESH_SUCCESS);
-                }
-                else
-                {
-                    notify_request_failure(m_core.notifier(), REFRESH_FAILURE, status_code, response, url);
-                }
-            }
-            else
-            {
-                notify_request_failure(m_core.notifier(), REFRESH_FAILURE, status_code, response, url);
-            }
-        }
-        , [this](std::int16_t error_code, const std::string& data)
-        {
-            handle_network_error(m_core.notifier(), error_code, data);
-        });
+                                              m_items[item_id] = std::move(item);
+                                              m_id_lists[parent_id].push_back(item_id);
+                                              m_file_metadata[item_id] = std::move(file_metadata);
+                                          }
+                                      }
+                                      api::folders::get_folders(m_core.settings().data().instance_url,
+                                                                m_core.selected_user()->access_token,
+                                                                m_core.network_provider(),
+                                                                [this](int status_code, const std::string& response)
+                                                                {
+                                                                    if (status_code == 200)
+                                                                    {
+                                                                        auto folders_body = json::parse(
+                                                                            response, nullptr, false);
+                                                                        if (folders_body.is_discarded() || !folders_body.
+                                                                            is_object())
+                                                                        {
+                                                                            notify_request_failure(
+                                                                                m_core.notifier(),
+                                                                                REFRESH_FAILURE, status_code,
+                                                                                response);
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            // bool has_more_folders = json_utils::get_bool(folders_body, "has_more", false);
+                                                                            // if (has_more_folders)
+                                                                            // {
+                                                                            //
+                                                                            // }
+                                                                            if (auto it = folders_body.find("folders"); it
+                                                                                != folders_body.end() && it->is_array())
+                                                                            {
+                                                                                for (auto& child : *it)
+                                                                                {
+                                                                                    Item item = item_from_json(child);
+
+
+                                                                                    const auto item_id = item.id;
+                                                                                    const auto parent_id = item.
+                                                                                        parent_id;
+
+                                                                                    item.save(
+                                                                                        m_core.database_provider().
+                                                                                        database());
+
+                                                                                    m_items[item_id] = std::move(item);
+                                                                                    m_id_lists[parent_id].push_back(
+                                                                                        item_id);
+                                                                                }
+                                                                            }
+
+                                                                            m_core.notifier().notify(REFRESH_SUCCESS);
+                                                                        }
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        notify_request_failure(
+                                                                            m_core.notifier(), FETCH_FOLDERS_FAILURE,
+                                                                            status_code, response);
+                                                                    }
+                                                                }, [this](std::int16_t error_code,
+                                                                          const std::string& data)
+                                                                {
+                                                                    handle_network_error(
+                                                                        m_core.notifier(), error_code, data);
+                                                                });
+                                  }
+                              }
+                              else
+                              {
+                                  notify_request_failure(m_core.notifier(), FETCH_FILES_FAILURE, status_code, response);
+                              }
+                          }, [this](std::int16_t error_code, const std::string& data)
+                          {
+                              handle_network_error(m_core.notifier(), error_code, data);
+                          });
 }
 
 void ItemManager::sort_items(std::int8_t option, const ItemId& parent_id)
