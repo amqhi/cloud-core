@@ -22,21 +22,6 @@ class INetworkProvider;
 class INotifier;
 struct User;
 
-struct ItemSummary
-{
-    std::string id;
-    std::string name;
-    std::string thumbnail_path;
-    std::int64_t deleted_at;
-    std::int64_t created_at;
-    std::int64_t updated_at;
-    std::int64_t size;
-    std::int16_t app_scope = 63;
-    std::int8_t type;
-    bool encrypted = false;
-    bool cached = false;
-};
-
 class ItemManager
 {
 public:
