@@ -24,18 +24,18 @@ void DatabaseProvider::initialize_database()
             PRAGMA foreign_keys = ON;
             CREATE TABLE IF NOT EXISTS items (
              id BLOB PRIMARY KEY NOT NULL,
-             type TEXT NOT NULL,
+             type INTEGER NOT NULL,
              created_at INTEGER NOT NULL,
              updated_at INTEGER NOT NULL,
              event_at INTEGER,
              deleted_at INTEGER,
              parent_id BLOB,
-             name TEXT,
-             tags TEXT,
+             name TEXT NOT NULL DEFAULT '',
              comment TEXT,
-             encrypted INTEGER DEFAULT 0,
+             icon_type INTEGER NOT NULL DEFAULT 0,
+             encrypted INTEGER NOT NULL DEFAULT 0,
              app_scope INTEGER NOT NULL DEFAULT 63,
-             cached BOOLEAN,
+             cached INTEGER NOT NULL DEFAULT 0,
              FOREIGN KEY(parent_id) REFERENCES items(id) ON DELETE CASCADE
            );
 
