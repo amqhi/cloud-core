@@ -6,7 +6,7 @@
 
 #include "core.h"
 
-void item_delete_on_local(Core& core, const UUID& item)
+void item_delete_on_local(Core& core, const Item& item)
 {
     item_delete_on_local(core.app_support_path(), core.selected_user()->local_id, core.database_provider().database(), item.id);
 }

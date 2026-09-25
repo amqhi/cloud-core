@@ -37,7 +37,7 @@ const std::vector<UUID>& ItemManager::id_list_by_id(const UUID& parent_id)
     return m_id_lists[parent_id];
 }
 
-const UUID& ItemManager::item_by_id(const UUID& id)
+const Item& ItemManager::item_by_id(const UUID& id)
 {
     return m_items[id];
 }
@@ -60,7 +60,7 @@ void ItemManager::initialize()
 
     while (stmt.step() == SQLITE_ROW)
     {
-        UUID item = item_from_stmt(stmt.stmt);
+        Item item = item_from_stmt(stmt.stmt);
 
         m_items[item.id] = item;
         m_id_lists[item.parent_id].push_back(item.id);
@@ -240,7 +240,7 @@ void ItemManager::refresh()
                                       {
                                           for (auto& child : *it)
                                           {
-                                              UUID item = item_from_json(child);
+                                              Item item = item_from_json(child);
                                               FileMetadata file_metadata = file_metadata_from_json(child);
                                               const auto item_id = item.id;
                                               const auto parent_id = item.parent_id;
@@ -282,7 +282,7 @@ void ItemManager::refresh()
                                                                             {
                                                                                 for (auto& child : *it)
                                                                                 {
-                                                                                    UUID item = item_from_json(child);
+                                                                                    Item item = item_from_json(child);
 
 
                                                                                     const auto item_id = item.id;
@@ -459,7 +459,7 @@ void ItemManager::create_file(const ItemAttributes& item_attributes, const std::
                                                     body["item"].is_object() &&
                                                     body.contains("upload") && body["upload"].is_object())
                                                 {
-                                                    UUID item = item_from_json(body["item"]);
+                                                    Item item = item_from_json(body["item"]);
                                                     item.save(m_core.database_provider().database());
                                                     auto& upload = body["upload"];
                                                     if (upload["type"] == "multipart")
@@ -609,7 +609,7 @@ void ItemManager::create_folder(const ItemAttributes& item_attributes)
                                                 auto body = json::parse(response, nullptr, false);
                                                 if (!body.is_discarded())
                                                 {
-                                                    UUID item = item_from_json(body);
+                                                    Item item = item_from_json(body);
                                                     item.save(m_core.database_provider().database());
                                                     apply_create_item(item);
                                                     json data;
@@ -632,7 +632,7 @@ void ItemManager::create_folder(const ItemAttributes& item_attributes)
                                         });
 }
 
-void ItemManager::complete_upload_multipart(const UUID& item, const std::string& checksum, std::uint64_t size,
+void ItemManager::complete_upload_multipart(const Item& item, const std::string& checksum, std::uint64_t size,
                                             const std::string& mime_type, const std::string& upload_id,
                                             const json& parts)
 {
@@ -682,7 +682,7 @@ void ItemManager::complete_upload_multipart(const UUID& item, const std::string&
                                         });
 }
 
-void ItemManager::complete_upload(const UUID& item, const std::string& checksum, std::uint64_t size,
+void ItemManager::complete_upload(const Item& item, const std::string& checksum, std::uint64_t size,
                                   const std::string& mime_type)
 {
     std::string url = m_core.settings().data().instance_url + "/files/" + item.id.to_string() + "/complete";
@@ -1162,14 +1162,14 @@ void ItemManager::fetch_file_download_url(const UUID& id) const
                                  });
 }
 
-void ItemManager::apply_create_item(const UUID& item)
+void ItemManager::apply_create_item(const Item& item)
 {
     m_items[item.id] = item;
     m_id_lists[item.parent_id].emplace_back(item.id);
     sort_items(item.parent_id);
 }
 
-void ItemManager::apply_update_item(const UUID& item)
+void ItemManager::apply_update_item(const Item& item)
 {
     m_items[item.id] = item;
 }
