@@ -32,17 +32,17 @@ ItemManager::ItemManager(Core& core) : m_core(core)
 {
 }
 
-const std::vector<ItemId>& ItemManager::id_list_by_id(const ItemId& parent_id)
+const std::vector<UUID>& ItemManager::id_list_by_id(const UUID& parent_id)
 {
     return m_id_lists[parent_id];
 }
 
-const Item& ItemManager::item_by_id(const ItemId& id)
+const UUID& ItemManager::item_by_id(const UUID& id)
 {
     return m_items[id];
 }
 
-const FileMetadata& ItemManager::file_metadata_by_id(const ItemId& id)
+const FileMetadata& ItemManager::file_metadata_by_id(const UUID& id)
 {
     return m_file_metadata[id];
 }
@@ -60,7 +60,7 @@ void ItemManager::initialize()
 
     while (stmt.step() == SQLITE_ROW)
     {
-        Item item = item_from_stmt(stmt.stmt);
+        UUID item = item_from_stmt(stmt.stmt);
 
         m_items[item.id] = item;
         m_id_lists[item.parent_id].push_back(item.id);
@@ -108,7 +108,7 @@ void ItemManager::sync()
                                                    {
                                                        const auto& item_data = item_data_raw->get<nlohmann::json>();
                                                        auto item = item_from_json(item_data);
-                                                       ItemId item_id = item.id;
+                                                       UUID item_id = item.id;
                                                        item_ids.emplace_back(item_id.to_string());
 
                                                        // TODO: Handle sync for app scope changes
@@ -129,7 +129,7 @@ void ItemManager::sync()
                                                                    deleted_at != existing_item.deleted_at)
                                                                // Handle move or soft-delete or restore
                                                                {
-                                                                   ItemId old_parent_id = existing_item.parent_id;
+                                                                   UUID old_parent_id = existing_item.parent_id;
                                                                    m_items[item_id] = std::move(item);
                                                                    apply_move_item(
                                                                        item_id, old_parent_id,
@@ -240,7 +240,7 @@ void ItemManager::refresh()
                                       {
                                           for (auto& child : *it)
                                           {
-                                              Item item = item_from_json(child);
+                                              UUID item = item_from_json(child);
                                               FileMetadata file_metadata = file_metadata_from_json(child);
                                               const auto item_id = item.id;
                                               const auto parent_id = item.parent_id;
@@ -282,7 +282,7 @@ void ItemManager::refresh()
                                                                             {
                                                                                 for (auto& child : *it)
                                                                                 {
-                                                                                    Item item = item_from_json(child);
+                                                                                    UUID item = item_from_json(child);
 
 
                                                                                     const auto item_id = item.id;
@@ -326,13 +326,13 @@ void ItemManager::refresh()
                           });
 }
 
-void ItemManager::sort_items(std::int8_t option, const ItemId& parent_id)
+void ItemManager::sort_items(std::int8_t option, const UUID& parent_id)
 {
     m_core.cached_state().set_sort_option(parent_id, option);
     sort_items(parent_id);
 }
 
-void ItemManager::sort_items(const ItemId& parent_id)
+void ItemManager::sort_items(const UUID& parent_id)
 {
     if (m_id_lists.find(parent_id) != m_id_lists.end())
     {
@@ -349,7 +349,7 @@ void ItemManager::sort_items(const ItemId& parent_id)
         {
         case sort_option::NAME_ASC:
             std::sort(id_list.begin(), id_list.end(),
-                      [this](const ItemId& a, const ItemId& b)
+                      [this](const UUID& a, const UUID& b)
                       {
                           return m_items[a].name < m_items[b].name;
                       });
@@ -357,7 +357,7 @@ void ItemManager::sort_items(const ItemId& parent_id)
 
         case sort_option::NAME_DESC:
             std::sort(id_list.begin(), id_list.end(),
-                      [this](const ItemId& a, const ItemId& b)
+                      [this](const UUID& a, const UUID& b)
                       {
                           return m_items[a].name > m_items[b].name;
                       });
@@ -365,7 +365,7 @@ void ItemManager::sort_items(const ItemId& parent_id)
 
         case sort_option::CREATED_AT_ASC:
             std::sort(id_list.begin(), id_list.end(),
-                      [this](const ItemId& a, const ItemId& b)
+                      [this](const UUID& a, const UUID& b)
                       {
                           return m_items[a].created_at < m_items[b].created_at;
                       });
@@ -373,7 +373,7 @@ void ItemManager::sort_items(const ItemId& parent_id)
 
         case sort_option::CREATED_AT_DESC:
             std::sort(id_list.begin(), id_list.end(),
-                      [this](const ItemId& a, const ItemId& b)
+                      [this](const UUID& a, const UUID& b)
                       {
                           return m_items[a].created_at > m_items[b].created_at;
                       });
@@ -381,7 +381,7 @@ void ItemManager::sort_items(const ItemId& parent_id)
 
         case sort_option::UPDATED_AT_ASC:
             std::sort(id_list.begin(), id_list.end(),
-                      [this](const ItemId& a, const ItemId& b)
+                      [this](const UUID& a, const UUID& b)
                       {
                           return m_items[a].updated_at < m_items[b].updated_at;
                       });
@@ -389,7 +389,7 @@ void ItemManager::sort_items(const ItemId& parent_id)
 
         case sort_option::UPDATED_AT_DESC:
             std::sort(id_list.begin(), id_list.end(),
-                      [this](const ItemId& a, const ItemId& b)
+                      [this](const UUID& a, const UUID& b)
                       {
                           return m_items[a].updated_at > m_items[b].updated_at;
                       });
@@ -397,7 +397,7 @@ void ItemManager::sort_items(const ItemId& parent_id)
 
         case sort_option::SIZE_ASC:
             std::sort(id_list.begin(), id_list.end(),
-                      [this](const ItemId& a, const ItemId& b)
+                      [this](const UUID& a, const UUID& b)
                       {
                           return m_items[a].updated_at < m_items[b].updated_at;
                       });
@@ -406,7 +406,7 @@ void ItemManager::sort_items(const ItemId& parent_id)
         // TODO: sort items by size
         case sort_option::SIZE_DESC:
             std::sort(id_list.begin(), id_list.end(),
-                      [this](const ItemId& a, const ItemId& b)
+                      [this](const UUID& a, const UUID& b)
                       {
                           return m_items[a].updated_at > m_items[b].updated_at;
                       });
@@ -414,7 +414,7 @@ void ItemManager::sort_items(const ItemId& parent_id)
 
         case sort_option::TYPE_ASC:
             std::sort(id_list.begin(), id_list.end(),
-                      [this](const ItemId& a, const ItemId& b)
+                      [this](const UUID& a, const UUID& b)
                       {
                           return m_items[a].type < m_items[b].type;
                       });
@@ -422,7 +422,7 @@ void ItemManager::sort_items(const ItemId& parent_id)
 
         case sort_option::TYPE_DESC:
             std::sort(id_list.begin(), id_list.end(),
-                      [this](const ItemId& a, const ItemId& b)
+                      [this](const UUID& a, const UUID& b)
                       {
                           return m_items[a].type > m_items[b].type;
                       });
@@ -459,7 +459,7 @@ void ItemManager::create_file(const ItemAttributes& item_attributes, const std::
                                                     body["item"].is_object() &&
                                                     body.contains("upload") && body["upload"].is_object())
                                                 {
-                                                    Item item = item_from_json(body["item"]);
+                                                    UUID item = item_from_json(body["item"]);
                                                     item.save(m_core.database_provider().database());
                                                     auto& upload = body["upload"];
                                                     if (upload["type"] == "multipart")
@@ -609,7 +609,7 @@ void ItemManager::create_folder(const ItemAttributes& item_attributes)
                                                 auto body = json::parse(response, nullptr, false);
                                                 if (!body.is_discarded())
                                                 {
-                                                    Item item = item_from_json(body);
+                                                    UUID item = item_from_json(body);
                                                     item.save(m_core.database_provider().database());
                                                     apply_create_item(item);
                                                     json data;
@@ -632,7 +632,7 @@ void ItemManager::create_folder(const ItemAttributes& item_attributes)
                                         });
 }
 
-void ItemManager::complete_upload_multipart(const Item& item, const std::string& checksum, std::uint64_t size,
+void ItemManager::complete_upload_multipart(const UUID& item, const std::string& checksum, std::uint64_t size,
                                             const std::string& mime_type, const std::string& upload_id,
                                             const json& parts)
 {
@@ -682,7 +682,7 @@ void ItemManager::complete_upload_multipart(const Item& item, const std::string&
                                         });
 }
 
-void ItemManager::complete_upload(const Item& item, const std::string& checksum, std::uint64_t size,
+void ItemManager::complete_upload(const UUID& item, const std::string& checksum, std::uint64_t size,
                                   const std::string& mime_type)
 {
     std::string url = m_core.settings().data().instance_url + "/files/" + item.id.to_string() + "/complete";
@@ -730,7 +730,7 @@ void ItemManager::complete_upload(const Item& item, const std::string& checksum,
                                         });
 }
 
-void ItemManager::update_item(const ItemId& id, const ItemAttributes& item_attributes)
+void ItemManager::update_item(const UUID& id, const ItemAttributes& item_attributes)
 {
     std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string();
     std::map<std::string, std::string> headers;
@@ -773,7 +773,7 @@ void ItemManager::update_item(const ItemId& id, const ItemAttributes& item_attri
                                          });
 }
 
-void ItemManager::move_item(const ItemId& id, const ItemId& parent_id)
+void ItemManager::move_item(const UUID& id, const UUID& parent_id)
 {
     std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string() + "/move";
     std::map<std::string, std::string> headers;
@@ -792,7 +792,7 @@ void ItemManager::move_item(const ItemId& id, const ItemId& parent_id)
                                          {
                                              if (status_code == 200)
                                              {
-                                                 ItemId old_parent_id = m_items[id].parent_id;
+                                                 UUID old_parent_id = m_items[id].parent_id;
                                                  json data;
                                                  data["id_high"] = id.high;
                                                  data["id_low"] = id.low;
@@ -818,7 +818,7 @@ void ItemManager::move_item(const ItemId& id, const ItemId& parent_id)
                                          });
 }
 
-void ItemManager::rename_item(const ItemId& id, const std::string& name)
+void ItemManager::rename_item(const UUID& id, const std::string& name)
 {
     std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string();
     std::map<std::string, std::string> headers;
@@ -855,7 +855,7 @@ void ItemManager::rename_item(const ItemId& id, const std::string& name)
                                          });
 }
 
-void ItemManager::soft_delete_item(const ItemId& id)
+void ItemManager::soft_delete_item(const UUID& id)
 {
     std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string();
     std::map<std::string, std::string> headers;
@@ -868,7 +868,7 @@ void ItemManager::soft_delete_item(const ItemId& id)
                                       {
                                           if (status_code == 200)
                                           {
-                                              ItemId old_parent_id = m_items[id].parent_id;
+                                              UUID old_parent_id = m_items[id].parent_id;
                                               m_items[id].deleted_at = current_date_time_utc_int64();
                                               m_items[id].parent_id = special_folder::TRASH;
                                               m_items[id].save(m_core.database_provider().database());
@@ -894,7 +894,7 @@ void ItemManager::soft_delete_item(const ItemId& id)
                                       });
 }
 
-void ItemManager::restore_item(const ItemId& id)
+void ItemManager::restore_item(const UUID& id)
 {
     std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string() + "/restore";
     std::map<std::string, std::string> headers;
@@ -909,14 +909,14 @@ void ItemManager::restore_item(const ItemId& id)
                                          {
                                              if (status_code == 200)
                                              {
-                                                 ItemId old_parent_id = m_items[id].parent_id;
+                                                 UUID old_parent_id = m_items[id].parent_id;
                                                  nlohmann::json body = json::parse(response, nullptr, false);
                                                  m_items[id].deleted_at = std::nullopt;
                                                  if (auto it = body.find("parent_id"); it != body.end() && it->
                                                      is_string())
                                                  {
                                                      m_items[id].parent_id =
-                                                         ItemId::from_string(it->get<std::string>());
+                                                         UUID::from_string(it->get<std::string>());
                                                  }
                                                  else
                                                  {
@@ -948,7 +948,7 @@ void ItemManager::restore_item(const ItemId& id)
                                          });
 }
 
-void ItemManager::delete_item(const ItemId& id)
+void ItemManager::delete_item(const UUID& id)
 {
     std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string() + "/permanent";
     std::map<std::string, std::string> headers;
@@ -961,7 +961,7 @@ void ItemManager::delete_item(const ItemId& id)
                                       {
                                           if (status_code == 200)
                                           {
-                                              ItemId parent_id = m_items[id].parent_id;
+                                              UUID parent_id = m_items[id].parent_id;
                                               item_delete_on_local(m_core, m_items[id]);
                                               if (m_items[id].type == item_type::FILE)
                                               {
@@ -989,7 +989,7 @@ void ItemManager::delete_item(const ItemId& id)
                                       });
 }
 
-void ItemManager::download_thumbnail(const ItemId& id) const
+void ItemManager::download_thumbnail(const UUID& id) const
 {
     std::string url = m_core.settings().data().instance_url + "/items/" + id.to_string() + "/thumbnail";
     std::map<std::string, std::string> headers;
@@ -1049,7 +1049,7 @@ void ItemManager::download_thumbnail(const ItemId& id) const
                                   });
 }
 
-void ItemManager::cache_item(const ItemId& id)
+void ItemManager::cache_item(const UUID& id)
 {
     std::string file_path = item_local_file_path(m_core, id).string();
     download_item(id, file_path, [this, id](int status_code, const std::string& response)
@@ -1072,7 +1072,7 @@ void ItemManager::cache_item(const ItemId& id)
     });
 }
 
-void ItemManager::download_item(const ItemId& id, const std::string& file_path)
+void ItemManager::download_item(const UUID& id, const std::string& file_path)
 {
     download_item(id, file_path, [this, id](int status_code, const std::string& response)
     {
@@ -1093,7 +1093,7 @@ void ItemManager::download_item(const ItemId& id, const std::string& file_path)
     });
 }
 
-void ItemManager::download_item(const ItemId& id, const std::string& file_path,
+void ItemManager::download_item(const UUID& id, const std::string& file_path,
                                 const std::function<void(int status_code, const std::string& response)>& on_response)
 {
     api::files::get_download_url(
@@ -1135,7 +1135,7 @@ void ItemManager::download_item(const ItemId& id, const std::string& file_path,
         });
 }
 
-void ItemManager::fetch_file_download_url(const ItemId& id) const
+void ItemManager::fetch_file_download_url(const UUID& id) const
 {
     api::files::get_download_url(m_core, id.to_string(), [this, id](int status_code, const std::string& response)
                                  {
@@ -1162,19 +1162,19 @@ void ItemManager::fetch_file_download_url(const ItemId& id) const
                                  });
 }
 
-void ItemManager::apply_create_item(const Item& item)
+void ItemManager::apply_create_item(const UUID& item)
 {
     m_items[item.id] = item;
     m_id_lists[item.parent_id].emplace_back(item.id);
     sort_items(item.parent_id);
 }
 
-void ItemManager::apply_update_item(const Item& item)
+void ItemManager::apply_update_item(const UUID& item)
 {
     m_items[item.id] = item;
 }
 
-void ItemManager::apply_move_item(const ItemId& id, const ItemId& old_parent_id, const ItemId& parent_id)
+void ItemManager::apply_move_item(const UUID& id, const UUID& old_parent_id, const UUID& parent_id)
 {
     m_items[id].parent_id = parent_id;
     if (m_id_lists.find(old_parent_id) != m_id_lists.end())
@@ -1191,7 +1191,7 @@ void ItemManager::apply_move_item(const ItemId& id, const ItemId& old_parent_id,
     sort_items(m_items[id].parent_id);
 }
 
-void ItemManager::apply_delete_item(const ItemId& id, const ItemId& parent_id)
+void ItemManager::apply_delete_item(const UUID& id, const UUID& parent_id)
 {
     if (map_utils::contains_key(m_id_lists, parent_id))
     {

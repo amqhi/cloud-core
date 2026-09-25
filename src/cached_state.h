@@ -39,8 +39,8 @@ namespace sort_option
 }
 
 struct AppState {
-    std::unordered_map<ItemId, int8_t> sort_options;
-    std::unordered_map<ItemId, int8_t> view_modes;
+    std::unordered_map<UUID, int8_t> sort_options;
+    std::unordered_map<UUID, int8_t> view_modes;
     char selected_session;
 };
 
@@ -49,11 +49,11 @@ public:
     explicit CachedState(const std::string& app_support_path);
     [[nodiscard]] const AppState& get() const { return m_state; }
 
-    void set_sort_option(const ItemId& folder_id, int8_t option) {
+    void set_sort_option(const UUID& folder_id, int8_t option) {
         m_state.sort_options[folder_id] = option;
     }
 
-    void set_view_mode(const ItemId& folder_id, int8_t mode)
+    void set_view_mode(const UUID& folder_id, int8_t mode)
     {
         m_state.view_modes[folder_id] = mode;
     }

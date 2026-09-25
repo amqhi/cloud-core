@@ -27,14 +27,14 @@ class ItemManager
 public:
     explicit ItemManager(Core& core);
 
-    const std::vector<ItemId>& id_list_by_id(const ItemId& parent_id);
-    [[nodiscard]] const Item& item_by_id(const ItemId& id);
-    [[nodiscard]] const FileMetadata& file_metadata_by_id(const ItemId& id);
+    const std::vector<UUID>& id_list_by_id(const UUID& parent_id);
+    [[nodiscard]] const Item& item_by_id(const UUID& id);
+    [[nodiscard]] const FileMetadata& file_metadata_by_id(const UUID& id);
     void initialize();
     void sync();
     void refresh();
-    void sort_items(std::int8_t option, const ItemId& parent_id);
-    void sort_items(const ItemId& parent_id);
+    void sort_items(std::int8_t option, const UUID& parent_id);
+    void sort_items(const UUID& parent_id);
     void create_file(const ItemAttributes& item_attributes, const std::string& tmp_file_path);
     void create_folder(const ItemAttributes& item_attributes);
     void complete_upload_multipart(const Item& item, const std::string& checksum, std::uint64_t size,
@@ -42,33 +42,33 @@ public:
                                    nlohmann::json& parts);
     void complete_upload(const Item& item, const std::string& checksum, std::uint64_t size,
                          const std::string& mime_type);
-    void update_item(const ItemId& id, const ItemAttributes& item_attributes);
-    void move_item(const ItemId& id, const ItemId& parent_id);
-    void rename_item(const ItemId& id, const std::string& name);
-    void soft_delete_item(const ItemId& id);
-    void restore_item(const ItemId& id);
-    void delete_item(const ItemId& id);
-    void download_thumbnail(const ItemId& id) const;
-    void cache_item(const ItemId& id);
-    void download_item(const ItemId& id, const std::string& file_path);
-    void download_item(const ItemId& id, const std::string& file_path,
+    void update_item(const UUID& id, const ItemAttributes& item_attributes);
+    void move_item(const UUID& id, const UUID& parent_id);
+    void rename_item(const UUID& id, const std::string& name);
+    void soft_delete_item(const UUID& id);
+    void restore_item(const UUID& id);
+    void delete_item(const UUID& id);
+    void download_thumbnail(const UUID& id) const;
+    void cache_item(const UUID& id);
+    void download_item(const UUID& id, const std::string& file_path);
+    void download_item(const UUID& id, const std::string& file_path,
                        const std::function<void(int status_code, const std::string& response)>& on_response);
-    void fetch_file_download_url(const ItemId& id) const;
+    void fetch_file_download_url(const UUID& id) const;
 
 private:
     Core& m_core;
 
-    std::unordered_map<ItemId, Item> m_items;
-    std::unordered_map<ItemId, std::vector<ItemId>> m_id_lists;
-    std::unordered_map<ItemId, FileMetadata> m_file_metadata;
+    std::unordered_map<UUID, Item> m_items;
+    std::unordered_map<UUID, std::vector<UUID>> m_id_lists;
+    std::unordered_map<UUID, FileMetadata> m_file_metadata;
     // TODO: Implement CRUD for folder customization
-    std::unordered_map<ItemId, FolderMetadata> m_folder_metadata;
+    std::unordered_map<UUID, FolderMetadata> m_folder_metadata;
 
     // Prefix 'apply_' indicates mutating internal state (m_items, m_id_lists)
     void apply_create_item(const Item& item);
     void apply_update_item(const Item& item);
-    void apply_move_item(const ItemId& id, const ItemId& old_parent_id, const ItemId& parent_id);
-    void apply_delete_item(const ItemId& id, const ItemId& parent_id);
+    void apply_move_item(const UUID& id, const UUID& old_parent_id, const UUID& parent_id);
+    void apply_delete_item(const UUID& id, const UUID& parent_id);
 };
 
 #endif //CLOUD_CORE_ITEM_MANAGER_H
