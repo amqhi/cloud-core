@@ -81,6 +81,17 @@ void ItemManager::initialize()
 
         m_file_metadata[file_metadata.id] = file_metadata;
     }
+
+    Sqlite3Stmt folders_stmt;
+    sql = "SELECT * FROM folders;";
+    folders_stmt.prepare(m_core.database_provider().database(), sql);
+    while (folders_stmt.step() == SQLITE_ROW)
+    {
+        FolderMetadata folder_metadata = folder_metadata_from_stmt(folders_stmt.stmt);
+        auto item_id_bytes = sqlite3_column_blob(folders_stmt.stmt, folder_metadata_column_index::ID);
+        UUID item_id = UUID::from_bytes(item_id_bytes);
+        m_folder_metadata[item_id] = folder_metadata;
+    }
 }
 
 void ItemManager::sync()
@@ -110,6 +121,31 @@ void ItemManager::sync()
                                                        auto item = item_from_json(item_data);
                                                        UUID item_id = item.id;
                                                        item_ids.emplace_back(item_id.to_string());
+
+                                                       switch (item_type)
+                                                   {
+                                                   // TODO: Implement remaining item types for item synchronization
+                                                   case item_type::FILE:
+                                                       {
+                                                           auto file_metadata = file_metadata_from_json(item_data);
+                                                           cache_file_metadata(
+                                                               m_core.database_provider().database(),
+                                                               file_metadata);
+                                                           m_file_metadata[item_id] = file_metadata;
+                                                           item.setup_icon_type(file_metadata);
+                                                           break;
+                                                       }
+                                                       case item_type::FOLDER:
+                                                       {
+                                                           auto folder_metadata = folder_metadata_from_json(item_data);
+                                                           cache_folder_metadata(m_core.database_provider().database(), item_id, folder_metadata);
+                                                           m_folder_metadata[item_id] = folder_metadata;
+                                                           item.setup_icon_type(folder_metadata);
+                                                           break;
+                                                       }
+                                                   default:
+                                                           break;
+                                                       }
 
                                                        // TODO: Handle sync for app scope changes
                                                        switch (event_type)
@@ -146,21 +182,6 @@ void ItemManager::sync()
                                                                m_id_lists[item.parent_id].push_back(item.id);
                                                                apply_create_item(item);
                                                            }
-                                                           break;
-                                                       }
-
-                                                       switch (item_type)
-                                                       {
-                                                       // TODO: Implement remaining item types for item synchronization
-                                                       case item_type::FILE:
-                                                           {
-                                                               auto file_metadata = file_metadata_from_json(item_data);
-                                                               cache_file_metadata(
-                                                                   m_core.database_provider().database(),
-                                                                   file_metadata);
-                                                               break;
-                                                           }
-                                                       default:
                                                            break;
                                                        }
                                                    }
@@ -242,6 +263,7 @@ void ItemManager::refresh()
                                           {
                                               Item item = item_from_json(child);
                                               FileMetadata file_metadata = file_metadata_from_json(child);
+                                              item.setup_icon_type(file_metadata);
                                               const auto item_id = item.id;
                                               const auto parent_id = item.parent_id;
 
@@ -283,7 +305,8 @@ void ItemManager::refresh()
                                                                                 for (auto& child : *it)
                                                                                 {
                                                                                     Item item = item_from_json(child);
-
+                                                                                    FolderMetadata folder_metadata = folder_metadata_from_json(child);
+                                                                                    item.setup_icon_type(folder_metadata);
 
                                                                                     const auto item_id = item.id;
                                                                                     const auto parent_id = item.
@@ -292,7 +315,9 @@ void ItemManager::refresh()
                                                                                     item.save(
                                                                                         m_core.database_provider().
                                                                                         database());
+                                                                                    cache_folder_metadata(m_core.database_provider().database(), item_id, folder_metadata);
 
+                                                                                    m_folder_metadata[item_id] = folder_metadata;
                                                                                     m_items[item_id] = std::move(item);
                                                                                     m_id_lists[parent_id].push_back(
                                                                                         item_id);

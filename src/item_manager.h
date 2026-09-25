@@ -61,7 +61,6 @@ private:
     std::unordered_map<UUID, Item> m_items;
     std::unordered_map<UUID, std::vector<UUID>> m_id_lists;
     std::unordered_map<UUID, FileMetadata> m_file_metadata;
-    // TODO: Implement CRUD for folder customization
     std::unordered_map<UUID, FolderMetadata> m_folder_metadata;
 
     // Prefix 'apply_' indicates mutating internal state (m_items, m_id_lists)
