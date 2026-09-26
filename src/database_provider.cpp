@@ -35,7 +35,7 @@ void DatabaseProvider::initialize_database()
              icon_type INTEGER NOT NULL DEFAULT 0,
              encrypted INTEGER NOT NULL DEFAULT 0,
              app_scope INTEGER NOT NULL DEFAULT 63,
-             cached INTEGER NOT NULL DEFAULT 0,
+             status INTEGER NOT NULL,
              FOREIGN KEY(parent_id) REFERENCES items(id) ON DELETE CASCADE
            );
 

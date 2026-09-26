@@ -1082,7 +1082,7 @@ void ItemManager::cache_item(const UUID& id)
         if (status_code == 200)
         {
             json data;
-            m_items[id].cached = true;
+            m_items[id].status = item_status::DOWNLOADED;
             data["id_high"] = id.high;
             data["id_low"] = id.low;
             data["parent_id_high"] = m_items[id].parent_id.high;
