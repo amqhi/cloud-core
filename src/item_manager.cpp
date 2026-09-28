@@ -1074,7 +1074,7 @@ void ItemManager::download_thumbnail(const UUID& id) const
                                   });
 }
 
-void ItemManager::cache_item(const UUID& id)
+void ItemManager::make_item_available_offline(const UUID& id)
 {
     std::string file_path = item_local_file_path(m_core, id).string();
     download_item(id, file_path, [this, id](int status_code, const std::string& response)

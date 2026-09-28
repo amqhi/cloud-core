@@ -49,7 +49,7 @@ public:
     void restore_item(const UUID& id);
     void delete_item(const UUID& id);
     void download_thumbnail(const UUID& id) const;
-    void cache_item(const UUID& id);
+    void make_item_available_offline(const UUID& id);
     void download_item(const UUID& id, const std::string& file_path);
     void download_item(const UUID& id, const std::string& file_path,
                        const std::function<void(int status_code, const std::string& response)>& on_response);
