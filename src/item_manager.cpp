@@ -96,6 +96,7 @@ void ItemManager::initialize()
 
 void ItemManager::sync()
 {
+    m_core.notifier().notify(SYNC_STARTED);
     api::sync::get_sync_events(m_core, [this](int status_code, const std::string& response)
                                {
                                    if (status_code == 200)
