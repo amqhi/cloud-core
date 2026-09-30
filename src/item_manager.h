@@ -33,7 +33,7 @@ public:
     void initialize();
     void sync();
     void refresh();
-    void sort_items(std::int8_t option, const UUID& parent_id);
+    void sort_items(char option, const UUID& parent_id);
     void sort_items(const UUID& parent_id);
     void create_file(const ItemAttributes& item_attributes, const std::string& tmp_file_path);
     void create_folder(const ItemAttributes& item_attributes);

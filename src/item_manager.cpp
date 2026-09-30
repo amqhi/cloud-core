@@ -352,7 +352,7 @@ void ItemManager::refresh()
                           });
 }
 
-void ItemManager::sort_items(std::int8_t option, const UUID& parent_id)
+void ItemManager::sort_items(char option, const UUID& parent_id)
 {
     m_core.cached_state().set_sort_option(parent_id, option);
     sort_items(parent_id);

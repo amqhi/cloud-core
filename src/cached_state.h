@@ -13,34 +13,34 @@
 namespace sort_option
 {
     /// A to Z
-    constexpr int8_t NAME_ASC = 0;
+    constexpr char NAME_ASC = 'n';
     /// Z to A
-    constexpr int8_t NAME_DESC = 1;
+    constexpr char NAME_DESC = 'N';
 
     /// Oldest first
-    constexpr int8_t CREATED_AT_ASC = 2;
+    constexpr char CREATED_AT_ASC = 'c';
     /// Newest first
-    constexpr int8_t CREATED_AT_DESC = 3;
+    constexpr char CREATED_AT_DESC = 'C';
 
     /// Oldest modified first
-    constexpr int8_t UPDATED_AT_ASC = 4;
+    constexpr char UPDATED_AT_ASC = 'u';
     /// Recently modified first
-    constexpr int8_t UPDATED_AT_DESC = 5;
+    constexpr char UPDATED_AT_DESC = 'U';
 
     /// Smallest first
-    constexpr int8_t SIZE_ASC = 6;
+    constexpr char SIZE_ASC = 's';
     /// Largest first
-    constexpr int8_t SIZE_DESC = 7;
+    constexpr char SIZE_DESC = 'S';
 
     /// Type A to Z
-    constexpr int8_t TYPE_ASC = 8;
+    constexpr char TYPE_ASC = 't';
     /// Type Z to A
-    constexpr int8_t TYPE_DESC = 9;
+    constexpr char TYPE_DESC = 'T';
 }
 
 struct AppState {
-    std::unordered_map<UUID, int8_t> sort_options;
-    std::unordered_map<UUID, int8_t> view_modes;
+    std::unordered_map<UUID, char> sort_options;
+    std::unordered_map<UUID, char> view_modes;
     char selected_session;
 };
 
@@ -49,11 +49,11 @@ public:
     explicit CachedState(const std::string& app_support_path);
     [[nodiscard]] const AppState& get() const { return m_state; }
 
-    void set_sort_option(const UUID& folder_id, int8_t option) {
+    void set_sort_option(const UUID& folder_id, char option) {
         m_state.sort_options[folder_id] = option;
     }
 
-    void set_view_mode(const UUID& folder_id, int8_t mode)
+    void set_view_mode(const UUID& folder_id, char mode)
     {
         m_state.view_modes[folder_id] = mode;
     }
