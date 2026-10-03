@@ -425,7 +425,7 @@ void Core::handle_logout()
             }
             else
             {
-                notify_request_failure(m_notifier, LOGIN_FAILURE, status_code, response);
+                notify_request_failure(m_notifier, LOGOUT_FAILURE, status_code, response);
             }
         }
         , [this](std::int16_t error_code, const std::string& data)
