@@ -129,6 +129,7 @@ void Core::add_user()
     user.local_id = created_user_local_id(m_users);
     m_users.push_back(user);
     m_selected_user_id = user.local_id;
+    m_cached_state->set_selected_user_id(m_selected_user_id);
     m_database_provider->close();
     m_item_manager->clear();
     initialize();
