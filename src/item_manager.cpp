@@ -47,6 +47,13 @@ const FileMetadata& ItemManager::file_metadata_by_id(const UUID& id)
     return m_file_metadata[id];
 }
 
+void ItemManager::clear()
+{
+    m_items.clear();
+    m_id_lists.clear();
+    m_file_metadata.clear();
+}
+
 void ItemManager::initialize()
 {
     Sqlite3Stmt stmt;

@@ -137,6 +137,7 @@ void Core::switch_user(char user_local_id)
 {
     m_selected_user_id = user_local_id;
     m_cached_state->set_selected_user_id(m_selected_user_id);
+    m_item_manager->clear();
     m_database_provider->close();
     initialize();
     m_notifier.notify(USER_SWITCHED);
