@@ -422,6 +422,8 @@ void Core::handle_logout()
                 {
                     m_selected_user_id = m_users[0].local_id;
                 }
+                m_database_provider->close();
+                m_item_manager->clear();
                 initialize();
                 m_notifier.notify(LOGOUT_SUCCESS);
             }
