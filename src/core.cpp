@@ -130,6 +130,7 @@ void Core::add_user()
     m_users.push_back(user);
     m_selected_user_id = user.local_id;
     m_database_provider->close();
+    m_item_manager->clear();
     initialize();
 }
 
