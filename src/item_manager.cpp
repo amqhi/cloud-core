@@ -970,12 +970,12 @@ void ItemManager::download_next_thumbnail(std::size_t index, std::int16_t event_
                                       }
                                       else
                                       {
-                                          // nlohmann::json data;
-                                          // data["status_code"] = status_code;
-                                          // data["response"] = response;
-                                          // data["id_high"] = id.high;
-                                          // data["id_low"] = id.low;
-                                          // m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
+                                          nlohmann::json data;
+                                          data["status_code"] = status_code;
+                                          data["response"] = response;
+                                          data["id_high"] = id.high;
+                                          data["id_low"] = id.low;
+                                          m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
                                           download_next_thumbnail(index + 1, event_code);
                                       }
                                   }, [this, index, event_code](std::int16_t error_code, const std::string& data)
