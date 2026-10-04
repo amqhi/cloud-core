@@ -49,6 +49,7 @@ public:
     void soft_delete_item(const UUID& id);
     void restore_item(const UUID& id);
     void delete_item(const UUID& id);
+    // void download_thumbnails(std::int16_t event_code);
     void download_thumbnail(const UUID& id) const;
     void make_item_available_offline(const UUID& id);
     void download_item(const UUID& id, const std::string& file_path);
@@ -63,6 +64,12 @@ private:
     std::unordered_map<UUID, std::vector<UUID>> m_id_lists;
     std::unordered_map<UUID, FileMetadata> m_file_metadata;
     std::unordered_map<UUID, FolderMetadata> m_folder_metadata;
+
+    // std::unique_ptr<std::vector<UUID>> m_thumbnail_downloading_ids;
+    // void download_next_thumbnail(std::size_t index, std::int16_t event_code);
+
+    void refresh_phase1_files();
+    void refresh_phase2_folders();
 
     // Prefix 'apply_' indicates mutating internal state (m_items, m_id_lists)
     void apply_create_item(const Item& item);
