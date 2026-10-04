@@ -941,6 +941,17 @@ void ItemManager::download_next_thumbnail(std::size_t index, std::int16_t event_
     }
 
     const auto& id = m_thumbnail_downloading_ids->at(index);
+    if (m_items[id].type != item_type::FILE)
+    {
+        download_next_thumbnail(index + 1, event_code);
+        return;
+    }
+    if (m_file_metadata[id].mime_type.compare(0, 6, "image/") != 0 || m_file_metadata[id].mime_type.compare(0, 6, "video/") != 0 || m_file_metadata[id].mime_type.compare(0, 6, "audio/") != 0)
+    {
+        download_next_thumbnail(index + 1, event_code);
+        return;
+    }
+
 
   api::items::get_thumbnail_download_url(id, m_core.settings().data().instance_url, m_core.selected_user()->access_token, m_core.network_provider(), [this, id, index, event_code](int status_code, const std::string& response)
                                   {
