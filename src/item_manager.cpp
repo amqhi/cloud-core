@@ -912,77 +912,77 @@ void ItemManager::delete_item(const UUID& id)
                                       });
 }
 
-// void ItemManager::download_thumbnails(int16_t event_code)
-// {
-//     if (m_thumbnail_downloading_ids || m_items.empty())
-//     {
-//         return;
-//     }
-//     m_thumbnail_downloading_ids = std::make_unique<std::vector<UUID>>();
-//
-//     for (const auto& [id, item] : m_items) {
-//         m_thumbnail_downloading_ids->push_back(id);
-//     }
-//
-//     if (m_thumbnail_downloading_ids->empty()) {
-//         m_thumbnail_downloading_ids.reset();
-//         return;
-//     }
-//
-//     download_next_thumbnail(0, event_code);
-// }
-//
-// void ItemManager::download_next_thumbnail(std::size_t index, std::int16_t event_code)
-// {
-//     if (index >= m_thumbnail_downloading_ids->size()) {
-//         m_thumbnail_downloading_ids.reset();
-//         m_core.notifier().notify(event_code);
-//         return;
-//     }
-//
-//     const auto& id = m_thumbnail_downloading_ids->at(index);
-//
-//   api::items::get_thumbnail_download_url(id, m_core.settings().data().instance_url, m_core.selected_user()->access_token, m_core.network_provider(), [this, id, index, event_code](int status_code, const std::string& response)
-//                                   {
-//                                       fs::path thumbnail_path = item_thumbnail_path(m_core, id);
-//                                       if (!fs::exists(thumbnail_path.parent_path()))
-//                                       {
-//                                           fs::create_directories(thumbnail_path.parent_path());
-//                                       }
-//                                       if (status_code == 200)
-//                                       {
-//                                           const std::string& download_url = response;
-//                                           std::map<std::string, std::string> headers;
-//                                           m_core.network_provider().download_file(
-//                                               download_url,
-//                                               headers,
-//                                               thumbnail_path.string(),
-//                                               [](std::int64_t bytes_received, std::int64_t total_bytes)
-//                                               {
-//                                               },
-//                                               [this, index, event_code](int status_code, const std::string& response)
-//                                               {
-//                                                  download_next_thumbnail(index + 1, event_code);
-//                                               }, [this, index, event_code](std::int16_t error_code, const std::string& data)
-//                                               {
-//                                                   download_next_thumbnail(index + 1, event_code);
-//                                               });
-//                                       }
-//                                       else
-//                                       {
-//                                           // nlohmann::json data;
-//                                           // data["status_code"] = status_code;
-//                                           // data["response"] = response;
-//                                           // data["id_high"] = id.high;
-//                                           // data["id_low"] = id.low;
-//                                           // m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
-//                                           download_next_thumbnail(index + 1, event_code);
-//                                       }
-//                                   }, [this, index, event_code](std::int16_t error_code, const std::string& data)
-//                                   {
-//                                       download_next_thumbnail(index + 1, event_code);
-//                                   });
-// }
+void ItemManager::download_thumbnails(int16_t event_code)
+{
+    if (m_thumbnail_downloading_ids || m_items.empty())
+    {
+        return;
+    }
+    m_thumbnail_downloading_ids = std::make_unique<std::vector<UUID>>();
+
+    for (const auto& [id, item] : m_items) {
+        m_thumbnail_downloading_ids->push_back(id);
+    }
+
+    if (m_thumbnail_downloading_ids->empty()) {
+        m_thumbnail_downloading_ids.reset();
+        return;
+    }
+
+    download_next_thumbnail(0, event_code);
+}
+
+void ItemManager::download_next_thumbnail(std::size_t index, std::int16_t event_code)
+{
+    if (index >= m_thumbnail_downloading_ids->size()) {
+        m_thumbnail_downloading_ids.reset();
+        m_core.notifier().notify(event_code);
+        return;
+    }
+
+    const auto& id = m_thumbnail_downloading_ids->at(index);
+
+  api::items::get_thumbnail_download_url(id, m_core.settings().data().instance_url, m_core.selected_user()->access_token, m_core.network_provider(), [this, id, index, event_code](int status_code, const std::string& response)
+                                  {
+                                      fs::path thumbnail_path = item_thumbnail_path(m_core, id);
+                                      if (!fs::exists(thumbnail_path.parent_path()))
+                                      {
+                                          fs::create_directories(thumbnail_path.parent_path());
+                                      }
+                                      if (status_code == 200)
+                                      {
+                                          const std::string& download_url = response;
+                                          std::map<std::string, std::string> headers;
+                                          m_core.network_provider().download_file(
+                                              download_url,
+                                              headers,
+                                              thumbnail_path.string(),
+                                              [](std::int64_t bytes_received, std::int64_t total_bytes)
+                                              {
+                                              },
+                                              [this, index, event_code](int status_code, const std::string& response)
+                                              {
+                                                 download_next_thumbnail(index + 1, event_code);
+                                              }, [this, index, event_code](std::int16_t error_code, const std::string& data)
+                                              {
+                                                  download_next_thumbnail(index + 1, event_code);
+                                              });
+                                      }
+                                      else
+                                      {
+                                          // nlohmann::json data;
+                                          // data["status_code"] = status_code;
+                                          // data["response"] = response;
+                                          // data["id_high"] = id.high;
+                                          // data["id_low"] = id.low;
+                                          // m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
+                                          download_next_thumbnail(index + 1, event_code);
+                                      }
+                                  }, [this, index, event_code](std::int16_t error_code, const std::string& data)
+                                  {
+                                      download_next_thumbnail(index + 1, event_code);
+                                  });
+}
 
 void ItemManager::refresh_phase1_files()
 {
@@ -1090,7 +1090,7 @@ void ItemManager::refresh_phase2_folders()
                                                                                 }
                                                                             }
 
-                                                                            //download_thumbnails(REFRESH_SUCCESS);
+                                                                            download_thumbnails(REFRESH_SUCCESS);
                                                                         }
                                                                     }
                                                                     else
