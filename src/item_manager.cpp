@@ -1021,6 +1021,10 @@ void ItemManager::refresh_phase1_files()
                                           for (auto& child : *it)
                                           {
                                               Item item = item_from_json(child);
+                                              if (item.updated_at == m_items[item.id].updated_at)
+                                              {
+                                                  continue;
+                                              }
                                               FileMetadata file_metadata = file_metadata_from_json(child);
                                               item.setup_icon_type(file_metadata);
                                               const auto item_id = item.id;
@@ -1082,6 +1086,10 @@ void ItemManager::refresh_phase2_folders()
                                                                                 for (auto& child : *it)
                                                                                 {
                                                                                     Item item = item_from_json(child);
+                                                                                    if (item.updated_at == m_items[item.id].updated_at)
+                                                                                    {
+                                                                                        continue;
+                                                                                    }
                                                                                     FolderMetadata folder_metadata = folder_metadata_from_json(child);
                                                                                     item.setup_icon_type(folder_metadata);
 
