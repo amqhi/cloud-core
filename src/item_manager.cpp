@@ -946,7 +946,7 @@ void ItemManager::download_next_thumbnail(std::size_t index, std::int16_t event_
         download_next_thumbnail(index + 1, event_code);
         return;
     }
-    if (m_file_metadata[id].mime_type.compare(0, 6, "image/") != 0 || m_file_metadata[id].mime_type.compare(0, 6, "video/") != 0 || m_file_metadata[id].mime_type.compare(0, 6, "audio/") != 0)
+    if (m_file_metadata[id].mime_type.compare(0, 6, "image/") != 0 && m_file_metadata[id].mime_type.compare(0, 6, "video/") != 0 && m_file_metadata[id].mime_type.compare(0, 6, "audio/") != 0)
     {
         download_next_thumbnail(index + 1, event_code);
         return;
