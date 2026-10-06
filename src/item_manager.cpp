@@ -533,6 +533,8 @@ void ItemManager::create_folder(const ItemAttributes& item_attributes)
                                                 if (!body.is_discarded())
                                                 {
                                                     Item item = item_from_json(body);
+                                                    FolderMetadata folder_metadata = folder_metadata_from_json(body);
+                                                    item.setup_icon_type(folder_metadata);
                                                     item.save(m_core.database_provider().database());
                                                     apply_create_item(item);
                                                     json data;
@@ -585,6 +587,7 @@ void ItemManager::complete_upload_multipart(const Item& item, const std::string&
                                                 cache_file_metadata(m_core.database_provider().database(),
                                                                     file_metadata);
                                                 m_items[item.id] = item;
+                                                m_items[item.id].setup_icon_type(file_metadata);
                                                 m_id_lists[item.parent_id].push_back(item.id);
                                                 json data;
                                                 data["id_high"] = item.id.high;
@@ -632,6 +635,7 @@ void ItemManager::complete_upload(const Item& item, const std::string& checksum,
                                                 cache_file_metadata(m_core.database_provider().database(),
                                                                     file_metadata);
                                                 m_items[item.id] = item;
+                                                m_items[item.id].setup_icon_type(file_metadata);
                                                 m_id_lists[item.parent_id].push_back(item.id);
                                                 json data;
                                                 data["id_high"] = item.id.high;
