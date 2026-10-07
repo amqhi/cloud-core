@@ -30,6 +30,7 @@ public:
     const std::vector<UUID>& id_list_by_id(const UUID& parent_id);
     [[nodiscard]] const Item& item_by_id(const UUID& id);
     [[nodiscard]] const FileMetadata& file_metadata_by_id(const UUID& id);
+    [[nodiscard]] const FolderMetadata& folder_metadata_by_id(const UUID& id);
     void clear();
     void initialize();
     void sync();

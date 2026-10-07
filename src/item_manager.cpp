@@ -47,6 +47,11 @@ const FileMetadata& ItemManager::file_metadata_by_id(const UUID& id)
     return m_file_metadata[id];
 }
 
+const FolderMetadata& ItemManager::folder_metadata_by_id(const UUID& id)
+{
+    return m_folder_metadata[id];
+}
+
 void ItemManager::clear()
 {
     m_items.clear();
