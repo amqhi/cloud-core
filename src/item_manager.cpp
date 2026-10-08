@@ -964,6 +964,9 @@ void ItemManager::download_next_thumbnail(std::size_t index, std::int16_t event_
                                                    const std::string& download_url = response;
                                                    std::map<std::string, std::string> headers;
                                                    nlohmann::json task_info;
+                                                   task_info["type"] = transfer_type::THUMBNAIL;
+                                                   task_info["id"] = id.to_string();
+                                                   task_info["parent_id"] = m_items[id].parent_id.to_string();
                                                    m_core.network_provider().download_file(
                                                        download_url,
                                                        headers,
@@ -1127,7 +1130,7 @@ void ItemManager::refresh_phase2_folders()
                               });
 }
 
-void ItemManager::download_thumbnail(const UUID& id) const
+void ItemManager::download_thumbnail(const UUID& id)
 {
     api::items::get_thumbnail_download_url(id, m_core.settings().data().instance_url,
                                            m_core.selected_user()->access_token, m_core.network_provider(),
@@ -1143,6 +1146,9 @@ void ItemManager::download_thumbnail(const UUID& id) const
                                                    const std::string& download_url = response;
                                                    std::map<std::string, std::string> headers;
                                                    nlohmann::json task_info;
+                                                   task_info["type"] = transfer_type::THUMBNAIL;
+                                                  task_info["id"] = id.to_string();
+                                                  task_info["parent_id"] = m_items[id].parent_id.to_string();
                                                    m_core.network_provider().download_file(
                                                        download_url,
                                                        headers,

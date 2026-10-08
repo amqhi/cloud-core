@@ -51,7 +51,7 @@ public:
     void restore_item(const UUID& id);
     void delete_item(const UUID& id);
     void download_thumbnails(std::int16_t event_code);
-    void download_thumbnail(const UUID& id) const;
+    void download_thumbnail(const UUID& id);
     void make_item_available_offline(const UUID& id);
     void download_item(const UUID& id, const std::string& file_path);
     void download_item(const UUID& id, const std::string& file_path,
