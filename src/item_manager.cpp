@@ -696,8 +696,7 @@ void ItemManager::move_item(const UUID& id, const UUID& parent_id)
     nlohmann::json body;
     if (parent_id != special_folder::TRASH && parent_id != special_folder::HOME)
     {
-        body["parent_id_high"] = parent_id.high;
-        body["parent_id_low"] = parent_id.low;
+        body["parent_id"] = parent_id.to_string();
     }
     m_core.network_provider().patch_json(url,
                                          headers,
