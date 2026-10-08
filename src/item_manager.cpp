@@ -533,10 +533,8 @@ void ItemManager::create_folder(const ItemAttributes& item_attributes)
                                                     item.save(m_core.database_provider().database());
                                                     apply_create_item(item);
                                                     json data;
-                                                    data["id_high"] = item.id.high;
-                                                    data["id_low"] = item.id.low;
-                                                    data["parent_id_high"] = item.parent_id.high;
-                                                    data["parent_id_low"] = item.parent_id.low;
+                                                    data["id"] = item.id.to_string();
+                                                    data["parent_id"] = item.parent_id.to_string();
                                                     data["type"] = item.type;
                                                     m_core.notifier().notify(ITEM_CREATE_SUCCESS, data);
                                                 }
@@ -585,10 +583,8 @@ void ItemManager::complete_upload_multipart(const Item& item, const std::string&
                                                 m_items[item.id].setup_icon_type(file_metadata);
                                                 m_id_lists[item.parent_id].push_back(item.id);
                                                 json data;
-                                                data["id_high"] = item.id.high;
-                                                data["id_low"] = item.id.low;
-                                                data["parent_id_high"] = item.parent_id.high;
-                                                data["parent_id_low"] = item.parent_id.low;
+                                                data["id"] = item.id.to_string();
+                                                data["parent_id"] = item.parent_id.to_string();
                                                 m_core.notifier().notify(ITEM_CREATE_SUCCESS, data);
                                                 download_thumbnail(item.id);
                                             }
@@ -633,10 +629,8 @@ void ItemManager::complete_upload(const Item& item, const std::string& checksum,
                                                 m_items[item.id].setup_icon_type(file_metadata);
                                                 m_id_lists[item.parent_id].push_back(item.id);
                                                 json data;
-                                                data["id_high"] = item.id.high;
-                                                data["id_low"] = item.id.low;
-                                                data["parent_id_high"] = item.parent_id.high;
-                                                data["parent_id_low"] = item.parent_id.low;
+                                                data["id"] = item.id.to_string();
+                                                data["parent_id"] = item.parent_id.to_string();
                                                 m_core.notifier().notify(ITEM_CREATE_SUCCESS, data);
                                                 download_thumbnail(item.id);
                                             }
@@ -675,10 +669,8 @@ void ItemManager::update_item(const UUID& id, const ItemAttributes& item_attribu
                                                  m_items[id].encrypted = item_attributes.encrypted;
                                                  m_items[id].save(m_core.database_provider().database());
                                                  json data;
-                                                 data["id_high"] = id.high;
-                                                 data["id_low"] = id.low;
-                                                 data["parent_id_high"] = m_items[id].parent_id.high;
-                                                 data["parent_id_low"] = m_items[id].parent_id.low;
+                                                 data["id"] = id.to_string();
+                                                 data["parent_id"] = m_items[id].parent_id.to_string();
                                                  sort_items(m_items[id].parent_id);
                                                  m_core.notifier().notify(ITEM_UPDATE_SUCCESS, data);
                                              }
@@ -716,12 +708,9 @@ void ItemManager::move_item(const UUID& id, const UUID& parent_id)
                                              {
                                                  UUID old_parent_id = m_items[id].parent_id;
                                                  json data;
-                                                 data["id_high"] = id.high;
-                                                 data["id_low"] = id.low;
-                                                 data["parent_id_high"] = parent_id.high;
-                                                 data["parent_id_low"] = parent_id.low;
-                                                 data["old_parent_id_high"] = old_parent_id.high;
-                                                 data["old_parent_id_low"] = old_parent_id.low;
+                                                 data["id"] = id.to_string();
+                                                 data["parent_id"] = parent_id.to_string();
+                                                 data["old_parent_id"] = old_parent_id.to_string();
                                                  m_items[id].parent_id = parent_id;
                                                  m_items[id].save(m_core.database_provider().database());
                                                  apply_move_item(id, old_parent_id, parent_id);
@@ -759,10 +748,8 @@ void ItemManager::rename_item(const UUID& id, const std::string& name)
                                                  nlohmann::json data;
                                                  m_items[id].name = name;
                                                  m_items[id].save(m_core.database_provider().database());
-                                                 data["id_high"] = id.high;
-                                                 data["id_low"] = id.low;
-                                                 data["parent_id_high"] = m_items[id].parent_id.high;
-                                                 data["parent_id_low"] = m_items[id].parent_id.low;
+                                                 data["id"] = id.to_string();
+                                                 data["parent_id"] = m_items[id].parent_id.to_string();
                                                  m_core.notifier().notify(ITEM_UPDATE_SUCCESS, data);
                                              }
                                              else
@@ -796,12 +783,9 @@ void ItemManager::soft_delete_item(const UUID& id)
                                               m_items[id].save(m_core.database_provider().database());
                                               apply_move_item(id, old_parent_id, special_folder::TRASH);
                                               nlohmann::json data;
-                                              data["id_high"] = id.high;
-                                              data["id_low"] = id.low;
-                                              data["parent_id_high"] = m_items[id].parent_id.high;
-                                              data["parent_id_low"] = m_items[id].parent_id.low;
-                                              data["old_parent_id_high"] = old_parent_id.high;
-                                              data["old_parent_id_low"] = old_parent_id.low;
+                                              data["id"] = id.to_string();
+                                              data["parent_id"] = m_items[id].parent_id.to_string();
+                                              data["old_parent_id"] = old_parent_id.to_string();
                                               m_core.notifier().notify(ITEM_SOFT_DELETE_SUCCESS, data);
                                           }
                                           else
@@ -847,12 +831,9 @@ void ItemManager::restore_item(const UUID& id)
 
                                                  m_items[id].save(m_core.database_provider().database());
                                                  nlohmann::json data;
-                                                 data["id_high"] = id.high;
-                                                 data["id_low"] = id.low;
-                                                 data["parent_id_high"] = m_items[id].parent_id.high;
-                                                 data["parent_id_low"] = m_items[id].parent_id.low;
-                                                 data["old_parent_id_high"] = old_parent_id.high;
-                                                 data["old_parent_id_low"] = old_parent_id.low;
+                                                 data["id"] = id.to_string();
+                                                 data["parent_id"] = m_items[id].parent_id.to_string();
+                                                 data["old_parent_id"] = old_parent_id.to_string();
 
                                                  apply_move_item(id, old_parent_id, m_items[id].parent_id);
                                                  m_core.notifier().notify(ITEM_RESTORE_SUCCESS, data);
@@ -892,10 +873,8 @@ void ItemManager::delete_item(const UUID& id)
                                               }
                                               apply_delete_item(id, m_items[id].parent_id);
                                               nlohmann::json data;
-                                              data["id_high"] = id.high;
-                                              data["id_low"] = id.low;
-                                              data["parent_id_high"] = parent_id.high;
-                                              data["parent_id_low"] = parent_id.low;
+                                              data["id"] = id.to_string();
+                                              data["parent_id"] = parent_id.to_string();
 
                                               m_core.notifier().notify(ITEM_DELETED, data);
                                           }
@@ -982,8 +961,7 @@ void ItemManager::download_next_thumbnail(std::size_t index, std::int16_t event_
                                           nlohmann::json data;
                                           data["status_code"] = status_code;
                                           data["response"] = response;
-                                          data["id_high"] = id.high;
-                                          data["id_low"] = id.low;
+                                          data["id"] = id.to_string();
                                           m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
                                           download_next_thumbnail(index + 1, event_code);
                                       }
@@ -1154,8 +1132,7 @@ void ItemManager::download_thumbnail(const UUID& id) const
                                                       nlohmann::json data;
                                                       data["status_code"] = status_code;
                                                       data["response"] = response;
-                                                      data["id_high"] = id.high;
-                                                      data["id_low"] = id.low;
+                                                      data["id"] = id.to_string();
                                                       data["url"] = download_url;
                                                       m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
                                                   }
@@ -1168,8 +1145,7 @@ void ItemManager::download_thumbnail(const UUID& id) const
                                           nlohmann::json data;
                                           data["status_code"] = status_code;
                                           data["response"] = response;
-                                          data["id_high"] = id.high;
-                                          data["id_low"] = id.low;
+                                          data["id"] = id.to_string();
                                           m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
                                       }
                                   }, [](std::int16_t error_code, const std::string& data)
@@ -1186,10 +1162,8 @@ void ItemManager::make_item_available_offline(const UUID& id)
         {
             json data;
             m_items[id].status = item_status::DOWNLOADED;
-            data["id_high"] = id.high;
-            data["id_low"] = id.low;
-            data["parent_id_high"] = m_items[id].parent_id.high;
-            data["parent_id_low"] = m_items[id].parent_id.low;
+            data["id"] = id.to_string();
+            data["parent_id"] = m_items[id].parent_id.to_string();
             m_core.notifier().notify(ITEM_CACHE_SUCCESS, data);
         }
         else
@@ -1207,10 +1181,8 @@ void ItemManager::download_item(const UUID& id, const std::string& file_path)
         if (status_code == 200)
         {
             nlohmann::json data;
-            data["id_high"] = id.high;
-            data["id_low"] = id.low;
-            data["parent_id_high"] = m_items[id].parent_id.high;
-            data["parent_id_low"] = m_items[id].parent_id.low;
+            data["id"] = id.to_string();
+            data["parent_id"] = m_items[id].parent_id.to_string();
             m_core.notifier().notify(FILE_DOWNLOAD_SUCCESS, data);
         }
         else
@@ -1264,16 +1236,14 @@ void ItemManager::fetch_file_download_url(const UUID& id) const
                                      {
                                          const std::string& download_url = response;
                                          json data;
-                                         data["id_high"] = id.high;
-                                         data["id_low"] = id.low;
+                                         data["id"] = id.to_string();
                                          data["url"] = download_url;
                                          m_core.notifier().notify(FETCH_FILE_DOWNLOAD_URL_SUCCESS, data);
                                      }
                                      else
                                      {
                                          json data;
-                                         data["id_high"] = id.high;
-                                         data["id_low"] = id.low;
+                                         data["id"] = id.to_string();
                                          m_core.notifier().notify(FETCH_FILE_DOWNLOAD_URL_FAILURE, data);
                                      }
                                  },
