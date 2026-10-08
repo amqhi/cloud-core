@@ -10,7 +10,7 @@
 
 class Core;
 void item_delete_on_local(Core& core, const Item& item);
-std::filesystem::path item_local_file_path(Core& core, const UUID& id);
+std::filesystem::path item_local_file_path(Core& core, const Item& item);
 std::filesystem::path item_thumbnail_path(Core& core, const UUID& id);
 // ItemSummary item_to_summary(Core& core, const Item& item);
 

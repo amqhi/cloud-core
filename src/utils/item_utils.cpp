@@ -11,9 +11,9 @@ void item_delete_on_local(Core& core, const Item& item)
     item_delete_on_local(core.app_support_path(), core.selected_user()->local_id, core.database_provider().database(), item.id);
 }
 
-std::filesystem::path item_local_file_path(Core& core, const UUID& id)
+std::filesystem::path item_local_file_path(Core& core, const Item& item)
 {
-    return item_local_file_path(core.app_support_path(), core.selected_user()->local_id, id);
+    return item_local_file_path(core.app_support_path(), core.selected_user()->local_id, item);
 }
 
 std::filesystem::path item_thumbnail_path(Core& core, const UUID& id)

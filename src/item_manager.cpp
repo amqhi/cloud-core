@@ -136,27 +136,30 @@ void ItemManager::sync()
                                                        item_ids.emplace_back(item_id.to_string());
 
                                                        switch (item_type)
-                                                   {
-                                                   // TODO: Implement remaining item types for item synchronization
-                                                   case item_type::FILE:
                                                        {
-                                                           auto file_metadata = file_metadata_from_json(item_data);
-                                                           cache_file_metadata(
-                                                               m_core.database_provider().database(),
-                                                               file_metadata);
-                                                           m_file_metadata[item_id] = file_metadata;
-                                                           item.setup_icon_type(file_metadata);
-                                                           break;
-                                                       }
+                                                       // TODO: Implement remaining item types for item synchronization
+                                                       case item_type::FILE:
+                                                           {
+                                                               auto file_metadata = file_metadata_from_json(item_data);
+                                                               cache_file_metadata(
+                                                                   m_core.database_provider().database(),
+                                                                   file_metadata);
+                                                               m_file_metadata[item_id] = file_metadata;
+                                                               item.setup_icon_type(file_metadata);
+                                                               break;
+                                                           }
                                                        case item_type::FOLDER:
-                                                       {
-                                                           auto folder_metadata = folder_metadata_from_json(item_data);
-                                                           cache_folder_metadata(m_core.database_provider().database(), item_id, folder_metadata);
-                                                           m_folder_metadata[item_id] = folder_metadata;
-                                                           item.setup_icon_type(folder_metadata);
-                                                           break;
-                                                       }
-                                                   default:
+                                                           {
+                                                               auto folder_metadata = folder_metadata_from_json(
+                                                                   item_data);
+                                                               cache_folder_metadata(
+                                                                   m_core.database_provider().database(), item_id,
+                                                                   folder_metadata);
+                                                               m_folder_metadata[item_id] = folder_metadata;
+                                                               item.setup_icon_type(folder_metadata);
+                                                               break;
+                                                           }
+                                                       default:
                                                            break;
                                                        }
 
@@ -173,6 +176,19 @@ void ItemManager::sync()
                                                            // If the item is already exists
                                                            {
                                                                auto& existing_item = pair->second;
+                                                               if (existing_item.status == item_status::DOWNLOADED)
+                                                               {
+                                                                   const auto old_path = item_local_file_path(
+                                                                       m_core, existing_item);
+
+                                                                   if (fs::exists(old_path))
+                                                                   {
+                                                                       const auto new_path = item_local_file_path(
+                                                                           m_core, item);
+
+                                                                       fs::rename(old_path, new_path);
+                                                                   }
+                                                               }
 
                                                                if (existing_item.parent_id != item.parent_id || item.
                                                                    deleted_at != existing_item.deleted_at)
@@ -401,15 +417,15 @@ void ItemManager::create_file(const ItemAttributes& item_attributes, const std::
 
                                                         nlohmann::json task_info;
                                                         task_info["id"] = item.id.to_string();
-                                                      task_info["name"] = item.name;
-                                                      task_info["type"] = transfer_type::FILE;
+                                                        task_info["name"] = item.name;
+                                                        task_info["type"] = transfer_type::FILE;
                                                         task_info["parent_id"] = item.parent_id.to_string();
                                                         // Payload for multipart completion
                                                         m_core.network_provider().put_file(
                                                             target_parts,
                                                             mime_type,
                                                             tmp_file_path,
-                                                           task_info,
+                                                            task_info,
                                                             [this, checksum, size, item, mime_type, upload_id,
                                                                 completed_parts](
                                                             int status_code,
@@ -447,10 +463,10 @@ void ItemManager::create_file(const ItemAttributes& item_attributes, const std::
                                                         headers["Content-Length"] = std::to_string(size);
 
                                                         nlohmann::json task_info;
-                                                         task_info["id"] = item.id.to_string();
-                                                       task_info["name"] = item.name;
-                                                       task_info["type"] = transfer_type::FILE;
-                                                         task_info["parent_id"] = item.parent_id.to_string();
+                                                        task_info["id"] = item.id.to_string();
+                                                        task_info["name"] = item.name;
+                                                        task_info["type"] = transfer_type::FILE;
+                                                        task_info["parent_id"] = item.parent_id.to_string();
                                                         m_core.network_provider().put_file(
                                                             upload_url,
                                                             headers,
@@ -897,11 +913,13 @@ void ItemManager::download_thumbnails(int16_t event_code)
     }
     m_thumbnail_downloading_ids = std::make_unique<std::vector<UUID>>();
 
-    for (const auto& [id, item] : m_items) {
+    for (const auto& [id, item] : m_items)
+    {
         m_thumbnail_downloading_ids->push_back(id);
     }
 
-    if (m_thumbnail_downloading_ids->empty()) {
+    if (m_thumbnail_downloading_ids->empty())
+    {
         m_thumbnail_downloading_ids.reset();
         return;
     }
@@ -911,7 +929,8 @@ void ItemManager::download_thumbnails(int16_t event_code)
 
 void ItemManager::download_next_thumbnail(std::size_t index, std::int16_t event_code)
 {
-    if (index >= m_thumbnail_downloading_ids->size()) {
+    if (index >= m_thumbnail_downloading_ids->size())
+    {
         m_thumbnail_downloading_ids.reset();
         m_core.notifier().notify(event_code);
         return;
@@ -923,56 +942,62 @@ void ItemManager::download_next_thumbnail(std::size_t index, std::int16_t event_
         download_next_thumbnail(index + 1, event_code);
         return;
     }
-    if (m_file_metadata[id].mime_type.compare(0, 6, "image/") != 0 && m_file_metadata[id].mime_type.compare(0, 6, "video/") != 0 && m_file_metadata[id].mime_type.compare(0, 6, "audio/") != 0)
+    if (m_file_metadata[id].mime_type.compare(0, 6, "image/") != 0 && m_file_metadata[id].mime_type.
+        compare(0, 6, "video/") != 0 && m_file_metadata[id].mime_type.compare(0, 6, "audio/") != 0)
     {
         download_next_thumbnail(index + 1, event_code);
         return;
     }
 
 
-  api::items::get_thumbnail_download_url(id, m_core.settings().data().instance_url, m_core.selected_user()->access_token, m_core.network_provider(), [this, id, index, event_code](int status_code, const std::string& response)
-                                  {
-                                      fs::path thumbnail_path = item_thumbnail_path(m_core, id);
-                                      if (!fs::exists(thumbnail_path.parent_path()))
-                                      {
-                                          fs::create_directories(thumbnail_path.parent_path());
-                                      }
-                                      if (status_code == 200)
-                                      {
-                                          const std::string& download_url = response;
-                                          std::map<std::string, std::string> headers;
-                                          nlohmann::json task_info;
-                                          m_core.network_provider().download_file(
-                                              download_url,
-                                              headers,
-                                              thumbnail_path.string(),
-                                              task_info,
-                                              [this, index, event_code](int status_code, const std::string& response)
-                                              {
-                                                 download_next_thumbnail(index + 1, event_code);
-                                              }, [this, index, event_code](std::int16_t error_code, const std::string& data)
-                                              {
-                                                  download_next_thumbnail(index + 1, event_code);
-                                              });
-                                      }
-                                      else
-                                      {
-                                          nlohmann::json data;
-                                          data["status_code"] = status_code;
-                                          data["response"] = response;
-                                          data["id"] = id.to_string();
-                                          m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
-                                          download_next_thumbnail(index + 1, event_code);
-                                      }
-                                  }, [this, index, event_code](std::int16_t error_code, const std::string& data)
-                                  {
-                                      download_next_thumbnail(index + 1, event_code);
-                                  });
+    api::items::get_thumbnail_download_url(id, m_core.settings().data().instance_url,
+                                           m_core.selected_user()->access_token, m_core.network_provider(),
+                                           [this, id, index, event_code](int status_code, const std::string& response)
+                                           {
+                                               fs::path thumbnail_path = item_thumbnail_path(m_core, id);
+                                               if (!fs::exists(thumbnail_path.parent_path()))
+                                               {
+                                                   fs::create_directories(thumbnail_path.parent_path());
+                                               }
+                                               if (status_code == 200)
+                                               {
+                                                   const std::string& download_url = response;
+                                                   std::map<std::string, std::string> headers;
+                                                   nlohmann::json task_info;
+                                                   m_core.network_provider().download_file(
+                                                       download_url,
+                                                       headers,
+                                                       thumbnail_path.string(),
+                                                       task_info,
+                                                       [this, index, event_code](
+                                                       int status_code, const std::string& response)
+                                                       {
+                                                           download_next_thumbnail(index + 1, event_code);
+                                                       }, [this, index, event_code](
+                                                       std::int16_t error_code, const std::string& data)
+                                                       {
+                                                           download_next_thumbnail(index + 1, event_code);
+                                                       });
+                                               }
+                                               else
+                                               {
+                                                   nlohmann::json data;
+                                                   data["status_code"] = status_code;
+                                                   data["response"] = response;
+                                                   data["id"] = id.to_string();
+                                                   m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
+                                                   download_next_thumbnail(index + 1, event_code);
+                                               }
+                                           }, [this, index, event_code](
+                                           std::int16_t error_code, const std::string& data)
+                                           {
+                                               download_next_thumbnail(index + 1, event_code);
+                                           });
 }
 
 void ItemManager::refresh_phase1_files()
 {
-     api::files::get_files(m_core.settings().data().instance_url, m_core.selected_user()->access_token,
+    api::files::get_files(m_core.settings().data().instance_url, m_core.selected_user()->access_token,
                           m_core.network_provider(),
                           [this](int status_code, const std::string& response)
                           {
@@ -1032,129 +1057,135 @@ void ItemManager::refresh_phase1_files()
 void ItemManager::refresh_phase2_folders()
 {
     api::folders::get_folders(m_core.settings().data().instance_url,
-                                                                m_core.selected_user()->access_token,
-                                                                m_core.network_provider(),
-                                                                [this](int status_code, const std::string& response)
-                                                                {
-                                                                    if (status_code == 200)
-                                                                    {
-                                                                        auto folders_body = json::parse(
-                                                                            response, nullptr, false);
-                                                                        if (folders_body.is_discarded() || !folders_body.
-                                                                            is_object())
-                                                                        {
-                                                                            notify_request_failure(
-                                                                                m_core.notifier(),
-                                                                                REFRESH_FAILURE, status_code,
-                                                                                response);
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                            // bool has_more_folders = json_utils::get_bool(folders_body, "has_more", false);
-                                                                            // if (has_more_folders)
-                                                                            // {
-                                                                            //
-                                                                            // }
-                                                                            if (auto it = folders_body.find("folders"); it
-                                                                                != folders_body.end() && it->is_array())
-                                                                            {
-                                                                                for (auto& child : *it)
-                                                                                {
-                                                                                    Item item = item_from_json(child);
-                                                                                    if (item.updated_at == m_items[item.id].updated_at)
-                                                                                    {
-                                                                                        continue;
-                                                                                    }
-                                                                                    FolderMetadata folder_metadata = folder_metadata_from_json(child);
-                                                                                    item.setup_icon_type(folder_metadata);
+                              m_core.selected_user()->access_token,
+                              m_core.network_provider(),
+                              [this](int status_code, const std::string& response)
+                              {
+                                  if (status_code == 200)
+                                  {
+                                      auto folders_body = json::parse(
+                                          response, nullptr, false);
+                                      if (folders_body.is_discarded() || !folders_body.
+                                          is_object())
+                                      {
+                                          notify_request_failure(
+                                              m_core.notifier(),
+                                              REFRESH_FAILURE, status_code,
+                                              response);
+                                      }
+                                      else
+                                      {
+                                          // bool has_more_folders = json_utils::get_bool(folders_body, "has_more", false);
+                                          // if (has_more_folders)
+                                          // {
+                                          //
+                                          // }
+                                          if (auto it = folders_body.find("folders"); it
+                                              != folders_body.end() && it->is_array())
+                                          {
+                                              for (auto& child : *it)
+                                              {
+                                                  Item item = item_from_json(child);
+                                                  if (item.updated_at == m_items[item.id].updated_at)
+                                                  {
+                                                      continue;
+                                                  }
+                                                  FolderMetadata folder_metadata = folder_metadata_from_json(child);
+                                                  item.setup_icon_type(folder_metadata);
 
-                                                                                    const auto item_id = item.id;
-                                                                                    const auto parent_id = item.
-                                                                                        parent_id;
+                                                  const auto item_id = item.id;
+                                                  const auto parent_id = item.
+                                                      parent_id;
 
-                                                                                    item.save(
-                                                                                        m_core.database_provider().
-                                                                                        database());
-                                                                                    cache_folder_metadata(m_core.database_provider().database(), item_id, folder_metadata);
+                                                  item.save(
+                                                      m_core.database_provider().
+                                                             database());
+                                                  cache_folder_metadata(m_core.database_provider().database(), item_id,
+                                                                        folder_metadata);
 
-                                                                                    m_folder_metadata[item_id] = folder_metadata;
-                                                                                    m_items[item_id] = std::move(item);
-                                                                                    m_id_lists[parent_id].push_back(
-                                                                                        item_id);
-                                                                                }
-                                                                            }
+                                                  m_folder_metadata[item_id] = folder_metadata;
+                                                  m_items[item_id] = std::move(item);
+                                                  m_id_lists[parent_id].push_back(
+                                                      item_id);
+                                              }
+                                          }
 
-                                                                            download_thumbnails(REFRESH_SUCCESS);
-                                                                        }
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        notify_request_failure(
-                                                                            m_core.notifier(), FETCH_FOLDERS_FAILURE,
-                                                                            status_code, response);
-                                                                    }
-                                                                }, [this](std::int16_t error_code,
-                                                                          const std::string& data)
-                                                                {
-                                                                    handle_network_error(
-                                                                        m_core.notifier(), error_code, data);
-                                                                });
+                                          download_thumbnails(REFRESH_SUCCESS);
+                                      }
+                                  }
+                                  else
+                                  {
+                                      notify_request_failure(
+                                          m_core.notifier(), FETCH_FOLDERS_FAILURE,
+                                          status_code, response);
+                                  }
+                              }, [this](std::int16_t error_code,
+                                        const std::string& data)
+                              {
+                                  handle_network_error(
+                                      m_core.notifier(), error_code, data);
+                              });
 }
 
 void ItemManager::download_thumbnail(const UUID& id) const
 {
-    api::items::get_thumbnail_download_url(id, m_core.settings().data().instance_url, m_core.selected_user()->access_token, m_core.network_provider(), [this, id](int status_code, const std::string& response)
-                                  {
-                                      fs::path thumbnail_path = item_thumbnail_path(m_core, id);
-                                      if (!fs::exists(thumbnail_path.parent_path()))
-                                      {
-                                          fs::create_directories(thumbnail_path.parent_path());
-                                      }
-                                      if (status_code == 200)
-                                      {
-                                          const std::string& download_url = response;
-                                          std::map<std::string, std::string> headers;
-                                          nlohmann::json task_info;
-                                          m_core.network_provider().download_file(
-                                              download_url,
-                                              headers,
-                                              thumbnail_path.string(),
-                                              task_info,
-                                              [this, id, download_url](int status_code, const std::string& response)
-                                              {
-                                                  if (status_code == 200)
-                                                  {
-                                                      m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_SUCCESS);
-                                                  }
-                                                  else
-                                                  {
-                                                      nlohmann::json data;
-                                                      data["status_code"] = status_code;
-                                                      data["response"] = response;
-                                                      data["id"] = id.to_string();
-                                                      data["url"] = download_url;
-                                                      m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
-                                                  }
-                                              }, [](std::int16_t error_code, const std::string& data)
-                                              {
-                                              });
-                                      }
-                                      else
-                                      {
-                                          nlohmann::json data;
-                                          data["status_code"] = status_code;
-                                          data["response"] = response;
-                                          data["id"] = id.to_string();
-                                          m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
-                                      }
-                                  }, [](std::int16_t error_code, const std::string& data)
-                                  {
-                                  });
+    api::items::get_thumbnail_download_url(id, m_core.settings().data().instance_url,
+                                           m_core.selected_user()->access_token, m_core.network_provider(),
+                                           [this, id](int status_code, const std::string& response)
+                                           {
+                                               fs::path thumbnail_path = item_thumbnail_path(m_core, id);
+                                               if (!fs::exists(thumbnail_path.parent_path()))
+                                               {
+                                                   fs::create_directories(thumbnail_path.parent_path());
+                                               }
+                                               if (status_code == 200)
+                                               {
+                                                   const std::string& download_url = response;
+                                                   std::map<std::string, std::string> headers;
+                                                   nlohmann::json task_info;
+                                                   m_core.network_provider().download_file(
+                                                       download_url,
+                                                       headers,
+                                                       thumbnail_path.string(),
+                                                       task_info,
+                                                       [this, id, download_url](
+                                                       int status_code, const std::string& response)
+                                                       {
+                                                           if (status_code == 200)
+                                                           {
+                                                               m_core.notifier().
+                                                                      notify(ITEM_THUMBNAIL_DOWNLOAD_SUCCESS);
+                                                           }
+                                                           else
+                                                           {
+                                                               nlohmann::json data;
+                                                               data["status_code"] = status_code;
+                                                               data["response"] = response;
+                                                               data["id"] = id.to_string();
+                                                               data["url"] = download_url;
+                                                               m_core.notifier().notify(
+                                                                   ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
+                                                           }
+                                                       }, [](std::int16_t error_code, const std::string& data)
+                                                       {
+                                                       });
+                                               }
+                                               else
+                                               {
+                                                   nlohmann::json data;
+                                                   data["status_code"] = status_code;
+                                                   data["response"] = response;
+                                                   data["id"] = id.to_string();
+                                                   m_core.notifier().notify(ITEM_THUMBNAIL_DOWNLOAD_FAILURE, data);
+                                               }
+                                           }, [](std::int16_t error_code, const std::string& data)
+                                           {
+                                           });
 }
 
 void ItemManager::make_item_available_offline(const UUID& id)
 {
-    std::string file_path = item_local_file_path(m_core, id).string();
+    std::string file_path = item_local_file_path(m_core, m_items[id]).string();
     download_item(id, file_path, [this, id](int status_code, const std::string& response)
     {
         if (status_code == 200)
@@ -1206,8 +1237,8 @@ void ItemManager::download_item(const UUID& id, const std::string& file_path,
                 std::map<std::string, std::string> headers;
                 nlohmann::json task_info;
                 task_info["id"] = id.to_string();
-               task_info["parent_id"] = m_items[id].parent_id.to_string();
-               task_info["type"] = transfer_type::FILE;
+                task_info["parent_id"] = m_items[id].parent_id.to_string();
+                task_info["type"] = transfer_type::FILE;
                 m_core.network_provider().download_file(
                     download_url, headers, file_path,
                     task_info, on_response, [this](std::int16_t error_code, const std::string& data)
