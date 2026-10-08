@@ -398,23 +398,18 @@ void ItemManager::create_file(const ItemAttributes& item_attributes, const std::
                                                         // Parts allocated by the server
 
                                                         auto completed_parts = nlohmann::json::array();
+
+                                                        nlohmann::json task_info;
+                                                        task_info["id"] = item.id.to_string();
+                                                      task_info["name"] = item.name;
+                                                      task_info["type"] = transfer_type::FILE;
+                                                        task_info["parent_id"] = item.parent_id.to_string();
                                                         // Payload for multipart completion
                                                         m_core.network_provider().put_file(
                                                             target_parts,
                                                             mime_type,
                                                             tmp_file_path,
-                                                            [this, item](
-                                                            std::int64_t bytes_written, std::int64_t total_bytes)
-                                                            {
-                                                                json data;
-                                                                data["bytes_written"] = bytes_written;
-                                                                data["total_bytes"] = total_bytes;
-                                                                data["id_high"] = item.id.high;
-                                                                data["id_low"] = item.id.low;
-                                                                data["name"] = item.name;
-                                                                data["type"] = transfer_type::FILE;
-                                                                m_core.notifier().notify(UPLOAD_PROGRESS, data);
-                                                            },
+                                                           task_info,
                                                             [this, checksum, size, item, mime_type, upload_id,
                                                                 completed_parts](
                                                             int status_code,
@@ -450,22 +445,17 @@ void ItemManager::create_file(const ItemAttributes& item_attributes, const std::
                                                         std::map<std::string, std::string> headers;
                                                         headers["Content-Type"] = mime_type;
                                                         headers["Content-Length"] = std::to_string(size);
+
+                                                        nlohmann::json task_info;
+                                                         task_info["id"] = item.id.to_string();
+                                                       task_info["name"] = item.name;
+                                                       task_info["type"] = transfer_type::FILE;
+                                                         task_info["parent_id"] = item.parent_id.to_string();
                                                         m_core.network_provider().put_file(
                                                             upload_url,
                                                             headers,
                                                             tmp_file_path,
-                                                            [this, item](
-                                                            std::int64_t bytes_written, std::int64_t total_bytes)
-                                                            {
-                                                                json data;
-                                                                data["bytes_written"] = bytes_written;
-                                                                data["total_bytes"] = total_bytes;
-                                                                data["id_high"] = item.id.high;
-                                                                data["id_low"] = item.id.low;
-                                                                data["name"] = item.name;
-                                                                data["type"] = transfer_type::FILE;
-                                                                m_core.notifier().notify(UPLOAD_PROGRESS, data);
-                                                            },
+                                                            task_info,
                                                             [this, checksum, size, mime_type, item, upload_url](
                                                             int status_code,
                                                             const std::string& response)
@@ -973,13 +963,12 @@ void ItemManager::download_next_thumbnail(std::size_t index, std::int16_t event_
                                       {
                                           const std::string& download_url = response;
                                           std::map<std::string, std::string> headers;
+                                          nlohmann::json task_info;
                                           m_core.network_provider().download_file(
                                               download_url,
                                               headers,
                                               thumbnail_path.string(),
-                                              [](std::int64_t bytes_received, std::int64_t total_bytes)
-                                              {
-                                              },
+                                              task_info,
                                               [this, index, event_code](int status_code, const std::string& response)
                                               {
                                                  download_next_thumbnail(index + 1, event_code);
@@ -1148,13 +1137,12 @@ void ItemManager::download_thumbnail(const UUID& id) const
                                       {
                                           const std::string& download_url = response;
                                           std::map<std::string, std::string> headers;
+                                          nlohmann::json task_info;
                                           m_core.network_provider().download_file(
                                               download_url,
                                               headers,
                                               thumbnail_path.string(),
-                                              [](std::int64_t bytes_received, std::int64_t total_bytes)
-                                              {
-                                              },
+                                              task_info,
                                               [this, id, download_url](int status_code, const std::string& response)
                                               {
                                                   if (status_code == 200)
@@ -1245,20 +1233,13 @@ void ItemManager::download_item(const UUID& id, const std::string& file_path,
             {
                 const std::string& download_url = response;
                 std::map<std::string, std::string> headers;
+                nlohmann::json task_info;
+                task_info["id"] = id.to_string();
+               task_info["parent_id"] = m_items[id].parent_id.to_string();
+               task_info["type"] = transfer_type::FILE;
                 m_core.network_provider().download_file(
                     download_url, headers, file_path,
-                    [this, id](std::int64_t bytes_received, std::int64_t total_bytes)
-                    {
-                        json data;
-                        data["bytes_received"] = bytes_received;
-                        data["total_bytes"] = total_bytes;
-                        data["id_high"] = id.high;
-                        data["id_low"] = id.low;
-                        data["parent_id_high"] = m_items[id].parent_id.high;
-                        data["parent_id_low"] = m_items[id].parent_id.low;
-                        data["type"] = transfer_type::FILE;
-                        m_core.notifier().notify(DOWNLOAD_PROGRESS, data);
-                    }, on_response, [this](std::int16_t error_code, const std::string& data)
+                    task_info, on_response, [this](std::int16_t error_code, const std::string& data)
                     {
                         handle_network_error(m_core.notifier(), error_code, data);
                     });
