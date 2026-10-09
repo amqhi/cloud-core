@@ -37,6 +37,30 @@ CachedState::CachedState(const std::string& app_support_path) : m_app_support_pa
     {
          m_state.selected_session = it->get<char>();
     }
+
+    if (auto it = data.find("sort_options"); it != data.end() && it->is_object())
+    {
+        for (const auto& [key_str, value] : it->items())
+        {
+            UUID uuid = UUID::from_string(key_str);
+            if (value.is_number_integer())
+            {
+                m_state.sort_options[uuid] = static_cast<char>(value.get<int>());
+            }
+        }
+    }
+
+    if (auto it = data.find("view_modes"); it != data.end() && it->is_object())
+    {
+        for (const auto& [key_str, value] : it->items())
+        {
+            UUID uuid = UUID::from_string(key_str);
+            if (value.is_number_integer())
+            {
+                m_state.view_modes[uuid] = static_cast<char>(value.get<int>());
+            }
+        }
+    }
 }
 
 void CachedState::save() const
@@ -52,6 +76,17 @@ void CachedState::save() const
     json data;
 
     data["selected_user_id"] = m_state.selected_session;
+    auto& sort_options_json = data["sort_options"] = nlohmann::json::object();
+    for (const auto& pair : m_state.sort_options)
+    {
+        sort_options_json[pair.first.to_string()] = pair.second;
+    }
+
+    auto& view_modes_json = data["view_modes"] = nlohmann::json::object();
+    for (const auto& pair : m_state.view_modes)
+    {
+        view_modes_json[pair.first.to_string()] = pair.second;
+    }
 
     if (file.is_open() && file.good()) {
         file << data.dump(4) << std::endl;
