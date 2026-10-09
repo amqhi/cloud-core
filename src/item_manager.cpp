@@ -284,7 +284,7 @@ void ItemManager::sort_items(const UUID& parent_id)
 
         if (!map_utils::contains_key(sort_options, parent_id))
         {
-            m_core.cached_state().set_sort_option(parent_id, sort_option::UPDATED_AT_DESC);
+            m_core.cached_state().set_sort_option(parent_id, sort_option::DEFAULT_OPTION);
         }
 
         auto& id_list = m_id_lists[parent_id];

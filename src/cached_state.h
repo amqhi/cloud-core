@@ -36,6 +36,8 @@ namespace sort_option
     constexpr char TYPE_ASC = 't';
     /// Type Z to A
     constexpr char TYPE_DESC = 'T';
+
+    constexpr char DEFAULT_OPTION = 'U';
 }
 
 struct AppState {
