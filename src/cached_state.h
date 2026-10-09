@@ -40,6 +40,13 @@ namespace sort_option
     constexpr char DEFAULT_OPTION = 'U';
 }
 
+namespace view_mode
+{
+    constexpr char GRID = 'g';
+    constexpr char LINEAR = 'l';
+    constexpr char DEFAULT_MODE = 'g';
+}
+
 struct AppState {
     std::unordered_map<UUID, char> sort_options;
     std::unordered_map<UUID, char> view_modes;
@@ -49,7 +56,7 @@ struct AppState {
 class CachedState {
 public:
     explicit CachedState(const std::string& app_support_path);
-    [[nodiscard]] const AppState& get() const { return m_state; }
+    [[nodiscard]] AppState& get() { return m_state; }
 
     void set_sort_option(const UUID& folder_id, char option) {
         m_state.sort_options[folder_id] = option;
