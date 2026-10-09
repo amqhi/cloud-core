@@ -29,6 +29,9 @@ public:
 
     void destroy() const;
 
+    void on_suspend() const;
+    void on_resume();
+
     [[nodiscard]] ItemManager& item_manager() const { return *m_item_manager; }
     [[nodiscard]] Settings& settings() const { return *m_settings; }
     [[nodiscard]] DatabaseProvider& database_provider() const { return *m_database_provider; }

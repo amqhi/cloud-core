@@ -19,7 +19,8 @@
 
 namespace fs = std::filesystem;
 
-Core::Core(std::string app_support_path, INetworkProvider& network_provider, ISecureStorageProvider& secure_storage_provider,
+Core::Core(std::string app_support_path, INetworkProvider& network_provider,
+           ISecureStorageProvider& secure_storage_provider,
            INotifier& notifier, IPlatformUtils& platform_utils)
     : m_app_support_path(std::move(app_support_path)), m_network_provider(network_provider),
       m_secure_storage_provider(secure_storage_provider), m_notifier(notifier), m_platform_utils(platform_utils)
@@ -81,7 +82,8 @@ void Core::initialize()
     m_database_provider->initialize_database();
     m_item_manager->initialize();
 
-    std::string tokens_string = m_secure_storage_provider.get_secure_string(std::string_view(&m_selected_user_id, 1), "");
+    std::string tokens_string = m_secure_storage_provider.get_secure_string(
+        std::string_view(&m_selected_user_id, 1), "");
     if (!tokens_string.empty())
     {
         auto tokens_json = nlohmann::json::parse(tokens_string, nullptr, false);
@@ -90,10 +92,6 @@ void Core::initialize()
             selected_user()->access_token = tokens_json["access_token"];
             selected_user()->refresh_token = tokens_json["refresh_token"];
         }
-        refresh_tokens([this]()
-        {
-            m_item_manager->sync();
-        });
     }
     else
     {
@@ -104,7 +102,8 @@ void Core::initialize()
 bool Core::token_refresh_required()
 {
     const auto user = selected_user();
-    if (!user) {
+    if (!user)
+    {
         return true;
     }
 
@@ -122,6 +121,21 @@ void Core::destroy() const
 {
     m_cached_state->save();
     m_database_provider->close();
+}
+
+void Core::on_suspend() const
+{
+    m_cached_state->save();
+    m_database_provider->close();
+}
+
+void Core::on_resume()
+{
+    m_database_provider->initialize_database();
+    refresh_tokens([this]()
+    {
+        m_item_manager->sync();
+    });
 }
 
 User* Core::selected_user()
@@ -179,7 +193,8 @@ void Core::exchange_google_token(const std::string& id_token)
                 else
                 {
                     AuthTokens auth_tokens = AuthTokens::from_json(json);
-                    m_secure_storage_provider.set_secure_string(std::string_view(&m_selected_user_id, 1), auth_tokens.serialize());
+                    m_secure_storage_provider.set_secure_string(std::string_view(&m_selected_user_id, 1),
+                                                                auth_tokens.serialize());
                     selected_user()->access_token = auth_tokens.access_token;
                     selected_user()->refresh_token = auth_tokens.refresh_token;
                 }
@@ -218,7 +233,8 @@ void Core::refresh_tokens(const std::function<void()>& on_complete)
                 else
                 {
                     AuthTokens auth_tokens = AuthTokens::from_json(json);
-                    m_secure_storage_provider.set_secure_string(std::string_view(&m_selected_user_id, 1), auth_tokens.serialize());
+                    m_secure_storage_provider.set_secure_string(std::string_view(&m_selected_user_id, 1),
+                                                                auth_tokens.serialize());
                     selected_user()->access_token = auth_tokens.access_token;
                     selected_user()->refresh_token = auth_tokens.refresh_token;
                 }
@@ -274,10 +290,11 @@ void Core::handle_login(const std::string& email, const std::string& password)
                 }
                 else
                 {
-                     AuthTokens auth_tokens = AuthTokens::from_json(json);
-                     m_secure_storage_provider.set_secure_string(std::string_view(&m_selected_user_id, 1), auth_tokens.serialize());
-                     selected_user()->access_token = auth_tokens.access_token;
-                     selected_user()->refresh_token = auth_tokens.refresh_token;
+                    AuthTokens auth_tokens = AuthTokens::from_json(json);
+                    m_secure_storage_provider.set_secure_string(std::string_view(&m_selected_user_id, 1),
+                                                                auth_tokens.serialize());
+                    selected_user()->access_token = auth_tokens.access_token;
+                    selected_user()->refresh_token = auth_tokens.refresh_token;
                     m_item_manager->refresh();
                     m_notifier.notify(LOGIN_SUCCESS);
                     fetch_user_info();
@@ -307,7 +324,8 @@ void Core::fetch_user_info()
                                    const nlohmann::json body = nlohmann::json::parse(response, nullptr, false);
                                    if (body.is_discarded())
                                    {
-                                       notify_request_failure(m_notifier, FETCH_USER_INFO_FAILURE, status_code, response);
+                                       notify_request_failure(m_notifier, FETCH_USER_INFO_FAILURE, status_code,
+                                                              response);
                                    }
                                    else
                                    {
@@ -362,7 +380,7 @@ void Core::fetch_user_info()
 }
 
 void Core::handle_register(const std::string& instance_url, const std::string& email, const std::string& password,
-    const std::string& name) const
+                           const std::string& name) const
 {
     m_settings->set_instance_url(instance_url);
     m_settings->save();
