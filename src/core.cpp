@@ -132,10 +132,17 @@ void Core::on_suspend() const
 void Core::on_resume()
 {
     m_database_provider->initialize_database();
-    refresh_tokens([this]()
+    if (token_refresh_required())
+    {
+        refresh_tokens([this]()
+        {
+            m_item_manager->sync();
+        });
+    }
+    else
     {
         m_item_manager->sync();
-    });
+    }
 }
 
 User* Core::selected_user()
