@@ -92,6 +92,17 @@ void Core::initialize()
             selected_user()->access_token = tokens_json["access_token"];
             selected_user()->refresh_token = tokens_json["refresh_token"];
         }
+        if (token_refresh_required())
+        {
+            refresh_tokens([this]()
+            {
+                m_item_manager->sync();
+            });
+        }
+        else
+        {
+            m_item_manager->sync();
+        }
     }
     else
     {
@@ -126,12 +137,10 @@ void Core::destroy() const
 void Core::on_suspend() const
 {
     m_cached_state->save();
-    m_database_provider->close();
 }
 
 void Core::on_resume()
 {
-    m_database_provider->initialize_database();
     if (token_refresh_required())
     {
         refresh_tokens([this]()
