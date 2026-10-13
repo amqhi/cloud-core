@@ -112,20 +112,7 @@ void Core::initialize()
 
 bool Core::token_refresh_required()
 {
-    const auto user = selected_user();
-    if (!user)
-    {
-        return true;
-    }
-
-    const auto expires_at_tp = std::chrono::system_clock::time_point{
-        std::chrono::seconds(user->expires_at)
-    };
-
-    const auto now = std::chrono::system_clock::now();
-    const auto time_until_expiry = expires_at_tp - now;
-
-    return time_until_expiry <= std::chrono::hours(6);
+    return true;
 }
 
 void Core::destroy() const
