@@ -112,7 +112,7 @@ void Core::initialize()
 
 bool Core::token_refresh_required()
 {
-    return true;
+    return selected_user()->is_token_refresh_required();
 }
 
 void Core::destroy() const
@@ -200,6 +200,7 @@ void Core::exchange_google_token(const std::string& id_token)
                                                                 auth_tokens.serialize());
                     selected_user()->access_token = auth_tokens.access_token;
                     selected_user()->refresh_token = auth_tokens.refresh_token;
+                    selected_user()->access_token_expires_at = User::calculate_expires_at(auth_tokens.expires_in);
                 }
             }
             else
@@ -240,6 +241,7 @@ void Core::refresh_tokens(const std::function<void()>& on_complete)
                                                                 auth_tokens.serialize());
                     selected_user()->access_token = auth_tokens.access_token;
                     selected_user()->refresh_token = auth_tokens.refresh_token;
+                    selected_user()->access_token_expires_at = User::calculate_expires_at(auth_tokens.expires_in);
                 }
                 on_complete();
             }
@@ -298,6 +300,7 @@ void Core::handle_login(const std::string& email, const std::string& password)
                                                                 auth_tokens.serialize());
                     selected_user()->access_token = auth_tokens.access_token;
                     selected_user()->refresh_token = auth_tokens.refresh_token;
+                    selected_user()->access_token_expires_at = User::calculate_expires_at(auth_tokens.expires_in);
                     m_item_manager->refresh();
                     m_notifier.notify(LOGIN_SUCCESS);
                     fetch_user_info();
