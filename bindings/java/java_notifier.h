@@ -66,7 +66,7 @@ public:
         jmethodID methodId = env->GetMethodID(clazz, "notifyJson", "(SLjava/lang/String;)V");
 
         if (methodId != nullptr) {
-            JString jData(env, data);
+            JString jData(env, data.dump());
             env->CallVoidMethod(java_provider_global_, methodId, static_cast<jshort>(code), jData.value);
         }
         env->DeleteLocalRef(clazz);

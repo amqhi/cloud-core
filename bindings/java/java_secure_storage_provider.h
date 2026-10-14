@@ -31,12 +31,12 @@ public:
         }
     }
 
-    bool set_secure_string(const std::string& key, const std::string& value) override {
+    bool set_secure_string(const std::string_view& key, const std::string& value) override {
         JNIEnv* env = getEnv();
         jclass clazz = env->GetObjectClass(java_provider_global_);
         jmethodID methodId = env->GetMethodID(clazz, "setSecureString", "(Ljava/lang/String;Ljava/lang/String;)Z");
 
-        jstring jkey = env->NewStringUTF(key.c_str());
+        jstring jkey = env->NewStringUTF(key.data());
         jstring jval = env->NewStringUTF(value.c_str());
 
         jboolean result = env->CallBooleanMethod(java_provider_global_, methodId, jkey, jval);
@@ -46,12 +46,12 @@ public:
         return result == JNI_TRUE;
     }
 
-    std::string get_secure_string(const std::string& key, const std::string& default_value) override {
+    std::string get_secure_string(const std::string_view& key, const std::string& default_value) override {
         JNIEnv* env = getEnv();
         jclass clazz = env->GetObjectClass(java_provider_global_);
         jmethodID methodId = env->GetMethodID(clazz, "getSecureString", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
 
-        jstring jkey = env->NewStringUTF(key.c_str());
+        jstring jkey = env->NewStringUTF(key.data());
         jstring jdefault = env->NewStringUTF(default_value.c_str());
 
         auto jres = reinterpret_cast<jstring>(env->CallObjectMethod(java_provider_global_, methodId, jkey, jdefault));
@@ -66,12 +66,12 @@ public:
         return result;
     }
 
-    void remove_secure_string(const std::string& key) override {
+    void remove_secure_string(const std::string_view& key) override {
         JNIEnv* env = getEnv();
         jclass clazz = env->GetObjectClass(java_provider_global_);
         jmethodID methodId = env->GetMethodID(clazz, "removeSecureString", "(Ljava/lang/String;)V");
 
-        jstring jkey = env->NewStringUTF(key.c_str());
+        jstring jkey = env->NewStringUTF(key.data());
         env->CallVoidMethod(java_provider_global_, methodId, jkey);
         env->DeleteLocalRef(jkey);
     }

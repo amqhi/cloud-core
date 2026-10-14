@@ -45,6 +45,11 @@ public:
 
         return result;
     }
+
+    [[nodiscard]] std::string get_device_name() const override
+    {
+        return "phone";
+    }
 };
 
 #endif //CLOUD_CORE_ANDROID_PLATFORM_UTILS_H

@@ -28,9 +28,14 @@ set(CLOUD_JAVA_BINDING_INCLUDE_DIRS
 )
 
 set(CLOUD_JAVA_BINDING_SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_binding.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_core.cpp
         ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_network_provider.h
         ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_notifier.h
         ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_platform_utils.h
         ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_secure_storage_provider.h
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_item_manager.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_settings.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_cached_state.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_binding_macros.h
+        ${CMAKE_CURRENT_LIST_DIR}/bindings/java/java_network_callback.cpp
 )
