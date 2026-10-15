@@ -21,7 +21,7 @@ JNI_SETTINGS_FUNCTION(void, save)(COMMON_PARAMS) {
 
 JNI_SETTINGS_FUNCTION(jstring, getInstanceUrl)(COMMON_PARAMS) {
             CORE(ptr)
-            std::string instance_url = core->settings().data().instance_url;
+            std::string instance_url = core->settings().instance_url();
             return env->NewStringUTF(instance_url.c_str());
 }
 

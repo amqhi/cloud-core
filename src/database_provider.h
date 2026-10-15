@@ -5,23 +5,17 @@
 #ifndef CLOUD_CORE_DATABASE_H
 #define CLOUD_CORE_DATABASE_H
 
-#include "sqlite3.h"
+#include "database_provider_base.h"
 
 class Core;
 
-class DatabaseProvider
+class DatabaseProvider : public DatabaseProviderBase
 {
     public:
-        explicit DatabaseProvider(Core& core) : m_core(core) {}
-        void initialize_database();
-        void close() const;
-        [[nodiscard]] sqlite3* database() const
-        {
-            return m_database;
-        }
-    private:
-        Core& m_core;
-        sqlite3* m_database = nullptr;
+        explicit DatabaseProvider(Core& core);
+
+private:
+    std::filesystem::path database_name() override;
 };
 
 #endif //CLOUD_CORE_DATABASE_H
