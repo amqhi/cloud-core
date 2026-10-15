@@ -101,6 +101,14 @@ void Core::initialize()
     }
     else
     {
-        m_notifier.notify(LOGIN_REQUIRED);
+        if (selected_user()->email.empty())
+        {
+            m_notifier.notify(LOGIN_REQUIRED);
+        }
+        else
+        {
+            m_notifier.notify(RE_LOGIN_REQUIRED);
+        }
+
     }
 }
