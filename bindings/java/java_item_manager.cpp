@@ -81,10 +81,10 @@ JNI_ITEM_MANAGER_FUNCTION(void, renameItem)(COMMON_PARAMS, jlong idHigh, jlong i
     core->item_manager().rename_item(id, name);
 }
 
-JNI_ITEM_MANAGER_FUNCTION(void, updateItem)(COMMON_PARAMS, UUID_PARAMS, jobject jItemAttributes)
+JNI_ITEM_MANAGER_FUNCTION(void, updateItem)(COMMON_PARAMS, SIMPLE_UUID_PARAMS, jobject jItemAttributes)
 {
     CORE(ptr)
-    UUID_FROM_PARAMS(id)
+    SIMPLE_UUID_FROM_PARAMS(id)
     ItemAttributes attributes = item_attributes_from_jobject(env, jItemAttributes);
     core->item_manager().update_item(id, attributes);
 }
@@ -109,11 +109,11 @@ JNI_ITEM_MANAGER_FUNCTION(void, createFile)(COMMON_PARAMS,
 
 JNI_ITEM_MANAGER_FUNCTION(jobject, getItemById)(
         COMMON_PARAMS,
-        UUID_PARAMS
+        SIMPLE_UUID_PARAMS
 )
  {
     CORE(ptr)
-     UUID_FROM_PARAMS(id);
+     SIMPLE_UUID_FROM_PARAMS(id);
     const Item& item = core->item_manager().item_by_id(id);
 
     jclass item_class = env->FindClass("com/amqhi/cloud/core/Item");
@@ -167,9 +167,9 @@ JNI_ITEM_MANAGER_FUNCTION(jobject, getItemById)(
     return jItem;
 }
 
-JNI_ITEM_MANAGER_FUNCTION(jobject, getFileMetadataById)(COMMON_PARAMS, UUID_PARAMS) {
+JNI_ITEM_MANAGER_FUNCTION(jobject, getFileMetadataById)(COMMON_PARAMS, SIMPLE_UUID_PARAMS) {
 CORE(ptr)
-    UUID_FROM_PARAMS(id)
+    SIMPLE_UUID_FROM_PARAMS(id)
     const FileMetadata& file_metadata = core->item_manager().file_metadata_by_id(id);
     jclass clazz = env->FindClass("com/amqhi/cloud/core/FileMetadata");
     jmethodID methodId = env->GetMethodID(clazz, "<init>",
@@ -185,17 +185,17 @@ CORE(ptr)
     return metadata;
 }
 
-JNI_ITEM_MANAGER_FUNCTION(void, downloadItem)(COMMON_PARAMS, UUID_PARAMS, jstring jFilePath)
+JNI_ITEM_MANAGER_FUNCTION(void, downloadItem)(COMMON_PARAMS, SIMPLE_UUID_PARAMS, jstring jFilePath)
 {
     CORE(ptr)
-    UUID_FROM_PARAMS(id)
+    SIMPLE_UUID_FROM_PARAMS(id)
     std::string filePath = jstring_to_string(env, jFilePath);
     core->item_manager().download_item(id, filePath);
 }
 
-JNI_ITEM_MANAGER_FUNCTION(jobject, getFolderMetadataById)(COMMON_PARAMS, UUID_PARAMS) {
+JNI_ITEM_MANAGER_FUNCTION(jobject, getFolderMetadataById)(COMMON_PARAMS, SIMPLE_UUID_PARAMS) {
     CORE(ptr)
-        UUID_FROM_PARAMS(id)
+        SIMPLE_UUID_FROM_PARAMS(id)
     const FolderMetadata& folder_metadata = core->item_manager().folder_metadata_by_id(id);
         jclass clazz = env->FindClass("com/amqhi/cloud/core/FolderMetadata");
     jmethodID methodId = env->GetMethodID(clazz, "<init>",
@@ -234,20 +234,20 @@ JNI_ITEM_MANAGER_FUNCTION(jobject, getFolderMetadataById)(COMMON_PARAMS, UUID_PA
 
 JNI_ITEM_MANAGER_FUNCTION(void, downloadThumbnail)(
     COMMON_PARAMS,
-    UUID_PARAMS)
+    SIMPLE_UUID_PARAMS)
 {
     CORE(ptr)
-    UUID_FROM_PARAMS(id);
+    SIMPLE_UUID_FROM_PARAMS(id);
     core->item_manager().download_thumbnail(id);
 }
 
 JNI_ITEM_MANAGER_FUNCTION(void, sortItems)(
         COMMON_PARAMS,
         jchar jOption,
-        UUID_PARAMS
+        SIMPLE_UUID_PARAMS
         ) {
     CORE(ptr)
-    UUID_FROM_PARAMS(folder_id);
+    SIMPLE_UUID_FROM_PARAMS(folder_id);
     core->item_manager().sort_items(static_cast<char>(jOption), folder_id);
 }
 
@@ -268,30 +268,30 @@ JNI_ITEM_MANAGER_FUNCTION(void, moveItem)(
     core->item_manager().move_item(id, parentId);
 }
 
-JNI_ITEM_MANAGER_FUNCTION(void, softDeleteItem)(COMMON_PARAMS, UUID_PARAMS)
+JNI_ITEM_MANAGER_FUNCTION(void, softDeleteItem)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
 {
     CORE(ptr)
-    UUID_FROM_PARAMS(id)
+    SIMPLE_UUID_FROM_PARAMS(id)
     core->item_manager().soft_delete_item(id);
 }
 
-JNI_ITEM_MANAGER_FUNCTION(void, restoreItem)(COMMON_PARAMS, UUID_PARAMS)
+JNI_ITEM_MANAGER_FUNCTION(void, restoreItem)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
 {
     CORE(ptr)
-    UUID_FROM_PARAMS(id)
+    SIMPLE_UUID_FROM_PARAMS(id)
     core->item_manager().restore_item(id);
 }
 
-JNI_ITEM_MANAGER_FUNCTION(void, deleteItem)(COMMON_PARAMS, UUID_PARAMS)
+JNI_ITEM_MANAGER_FUNCTION(void, deleteItem)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
 {
     CORE(ptr)
-    UUID_FROM_PARAMS(id)
+    SIMPLE_UUID_FROM_PARAMS(id)
     core->item_manager().delete_item(id);
 }
 
-JNI_ITEM_MANAGER_FUNCTION(void, makeItemAvailableOffline)(COMMON_PARAMS, UUID_PARAMS)
+JNI_ITEM_MANAGER_FUNCTION(void, makeItemAvailableOffline)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
 {
     CORE(ptr)
-    UUID_FROM_PARAMS(id)
+    SIMPLE_UUID_FROM_PARAMS(id)
     core->item_manager().make_item_available_offline(id);
 }

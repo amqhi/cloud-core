@@ -5,10 +5,10 @@
 #define CORE(ptr) Core* core = reinterpret_cast<Core*>(ptr);
 #define COMMON_PARAMS JNIEnv* env, jobject thiz, jlong ptr
 
-#define UUID_PARAMS jlong jIdHigh, jlong jIdLow
-#define UUID_FROM_PARAMS(name) UUID name{}; \
-name.high = jIdHigh; \
-name.low = jIdLow;
+#define SIMPLE_UUID_PARAMS jlong jIdHigh, jlong jIdLow
+#define SIMPLE_UUID_FROM_PARAMS(name) UUID name{}; \
+name.high = static_cast<std::uint64_t>(jIdHigh); \
+name.low = static_cast<std::uint64_t>(jIdLow);
 
 #define JNI_GET_OBJECT_FROM_CLASS(jObj, name, field, sig) jfieldID name##Field = env->GetFieldID(clazz, field, sig); \
         jobject name = env->GetObjectField(jObj, name##Field);
