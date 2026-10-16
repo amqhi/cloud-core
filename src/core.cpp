@@ -87,17 +87,7 @@ void Core::initialize()
             selected_user()->access_token = tokens_json["access_token"];
             selected_user()->refresh_token = tokens_json["refresh_token"];
         }
-        if (token_refresh_required())
-        {
-            refresh_tokens([this]()
-            {
-                m_item_manager->sync();
-            });
-        }
-        else
-        {
-            m_item_manager->sync();
-        }
+        m_item_manager->sync();
     }
     else
     {
