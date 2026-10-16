@@ -86,6 +86,7 @@ void Core::initialize()
         {
             selected_user()->access_token = json_utils::get_string(tokens_json, "access_token");
             selected_user()->refresh_token = json_utils::get_string(tokens_json, "refresh_token");
+            selected_user()->access_token_expires_at = json_utils::get_int64_t(tokens_json, "expires_at");
         }
         m_item_manager->sync();
     }
