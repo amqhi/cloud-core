@@ -84,8 +84,8 @@ void Core::initialize()
         auto tokens_json = nlohmann::json::parse(tokens_string, nullptr, false);
         if (!tokens_json.is_discarded())
         {
-            selected_user()->access_token = tokens_json["access_token"];
-            selected_user()->refresh_token = tokens_json["refresh_token"];
+            selected_user()->access_token = json_utils::get_string(tokens_json, "access_token");
+            selected_user()->refresh_token = json_utils::get_string(tokens_json, "refresh_token");
         }
         m_item_manager->sync();
     }
