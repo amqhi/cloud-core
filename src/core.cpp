@@ -77,8 +77,7 @@ void Core::initialize()
     m_database_provider->initialize_database();
     m_item_manager->initialize();
 
-    std::string tokens_string = m_secure_storage_provider.get_secure_string(
-        std::string(1, m_selected_user_id), "");
+    std::string tokens_string = m_secure_storage_provider.get_secure_string(m_selected_user_id, "");
     if (!tokens_string.empty())
     {
         auto tokens_json = nlohmann::json::parse(tokens_string, nullptr, false);
