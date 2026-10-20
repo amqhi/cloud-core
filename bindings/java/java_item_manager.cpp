@@ -205,7 +205,7 @@ JNI_ITEM_MANAGER_FUNCTION(jobject, getFolderMetadataById)(COMMON_PARAMS, SIMPLE_
     jobject backgroundColor = nullptr;
     jobject iconColor = nullptr;
     jclass intClazz = env->FindClass("java/lang/Integer");
-    jmethodID intMethodId = env->GetMethodID(clazz, "<init>", "(I)V");
+    jmethodID intMethodId = env->GetMethodID(intClazz, "<init>", "(I)V");
     if (folder_metadata.background_color.has_value())
     {
         backgroundColor = env->NewObject(intClazz, intMethodId, folder_metadata.background_color.value());
