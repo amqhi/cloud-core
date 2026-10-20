@@ -10,6 +10,11 @@
 name.high = static_cast<std::uint64_t>(jIdHigh); \
 name.low = static_cast<std::uint64_t>(jIdLow);
 
+#define UUID_PARAMS(name) jlong name##High, jlong name##Low
+#define UUID_FROM_PARAMS(name) UUID name{}; \
+name.high = static_cast<std::uint64_t>(name##High); \
+name.low = static_cast<std::uint64_t>(name##Low);
+
 #define JNI_GET_OBJECT_FROM_CLASS(jObj, name, field, sig) jfieldID name##Field = env->GetFieldID(clazz, field, sig); \
         jobject name = env->GetObjectField(jObj, name##Field);
 

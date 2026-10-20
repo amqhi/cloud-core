@@ -268,11 +268,37 @@ JNI_ITEM_MANAGER_FUNCTION(void, moveItem)(
     core->item_manager().move_item(id, parentId);
 }
 
+JNI_ITEM_MANAGER_FUNCTION(void, moveItems)(
+COMMON_PARAMS,
+jlongArray jIdValues,
+UUID_PARAMS(parentId),
+UUID_PARAMS(oldParentId))
+{
+    CORE(ptr)
+    std::vector<UUID> ids = java_uuid::vector_from_jlongArray(env, jIdValues);
+    UUID_FROM_PARAMS(parentId)
+    UUID_FROM_PARAMS(oldParentId)
+
+    core->item_manager().move_items(ids, parentId, oldParentId);
+}
+
 JNI_ITEM_MANAGER_FUNCTION(void, softDeleteItem)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
 {
     CORE(ptr)
     SIMPLE_UUID_FROM_PARAMS(id)
     core->item_manager().soft_delete_item(id);
+}
+
+JNI_ITEM_MANAGER_FUNCTION(void, softDeleteItems)(
+COMMON_PARAMS,
+jlongArray jIdValues,
+UUID_PARAMS(oldParentId))
+{
+    CORE(ptr)
+    std::vector<UUID> ids = java_uuid::vector_from_jlongArray(env, jIdValues);
+    UUID_FROM_PARAMS(oldParentId)
+
+    core->item_manager().soft_delete_items(ids, oldParentId);
 }
 
 JNI_ITEM_MANAGER_FUNCTION(void, restoreItem)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
@@ -282,11 +308,33 @@ JNI_ITEM_MANAGER_FUNCTION(void, restoreItem)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
     core->item_manager().restore_item(id);
 }
 
+JNI_ITEM_MANAGER_FUNCTION(void, restoreItems)(
+COMMON_PARAMS,
+jlongArray jIdValues,
+UUID_PARAMS(oldParentId))
+{
+    CORE(ptr)
+    std::vector<UUID> ids = java_uuid::vector_from_jlongArray(env, jIdValues);
+    UUID_FROM_PARAMS(oldParentId)
+
+    core->item_manager().restore_items(ids, oldParentId);
+}
+
 JNI_ITEM_MANAGER_FUNCTION(void, deleteItem)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
 {
     CORE(ptr)
     SIMPLE_UUID_FROM_PARAMS(id)
     core->item_manager().delete_item(id);
+}
+
+JNI_ITEM_MANAGER_FUNCTION(void, deleteItems)(
+COMMON_PARAMS,
+jlongArray jIdValues)
+{
+    CORE(ptr)
+    std::vector<UUID> ids = java_uuid::vector_from_jlongArray(env, jIdValues);
+
+    core->item_manager().delete_items(ids);
 }
 
 JNI_ITEM_MANAGER_FUNCTION(void, makeItemAvailableOffline)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
