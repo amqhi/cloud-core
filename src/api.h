@@ -9,10 +9,11 @@
 #include <functional>
 
 #include "file_metadata.h"
+#include "network_provider_base.h"
 
 class CoreBase;
 
-using OnResponse = std::function<void(int status_code, const std::string& response)>;
+using OnResponse = std::function<void(const amqhi::HttpResponse& response)>;
 using OnFailure = std::function<void(std::int16_t error_code, const std::string& data)>;
 
 namespace api
