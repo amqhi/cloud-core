@@ -6,6 +6,7 @@
 #include "java_string.h"
 #include "java_map.h"
 #include "network_provider.h"
+#include "network_provider_base.h"
 
 class JavaNetworkProvider : public INetworkProvider {
 private:
@@ -21,7 +22,7 @@ private:
     }
 
     struct CallbackContext {
-        std::function<void(int, const std::string &)> response;
+        std::function<void(const amqhi::HttpResponse&)> response;
         std::function<void(std::int16_t, const std::string &)> failure;
     };
 
@@ -39,8 +40,7 @@ public:
     }
 
     void executeHttp(const char* methodName, const std::string &url, const std::map<std::string, std::string> &headers,
-                  const nlohmann::json &body, const std::function<void(int status_code,
-                                                                 const std::string &response)>& on_response,  const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) const
+                  const nlohmann::json &body, const std::function<void(const amqhi::HttpResponse& response)>& on_response,  const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) const
     {
         JNIEnv *env = getEnv();
         jclass clazz = env->GetObjectClass(java_provider_global_);
@@ -66,8 +66,7 @@ public:
         env->DeleteLocalRef(jcallback);
     }
 
-    void executeHttp(const char* methodName, const std::string &url, const std::map<std::string, std::string> &headers, const std::function<void(int status_code,
-                                                                const std::string &response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) const
+    void executeHttp(const char* methodName, const std::string &url, const std::map<std::string, std::string> &headers, const std::function<void(const amqhi::HttpResponse& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) const
     {
         JNIEnv *env = getEnv();
         jclass clazz = env->GetObjectClass(java_provider_global_);
@@ -95,36 +94,33 @@ public:
             const std::string &url,
             const std::map<std::string, std::string> &headers,
             const nlohmann::json &body,
-            const std::function<void(int status_code, const std::string &response)>& on_response,
+            const std::function<void(const amqhi::HttpResponse& response)>& on_response,
             const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure
     ) override {
         executeHttp("postJson", url, headers, body, on_response, on_failure);
     }
 
     void get(const std::string &url, const std::map<std::string, std::string> &headers,
-             const std::function<void(int status_code,
-                                const std::string &response)>& on_response,
+             const std::function<void(const amqhi::HttpResponse& response)>& on_response,
                                    const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         executeHttp("get", url, headers, on_response, on_failure);
     }
 
     void patch_json(const std::string &url, const std::map<std::string, std::string> &headers,
-                    const nlohmann::json &body, const std::function<void(int status_code,
-                                                                   const std::string &response)>& on_response,
+                    const nlohmann::json &body, const std::function<void(const amqhi::HttpResponse& response)>& on_response,
                                                                       const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         executeHttp("patchJson", url, headers, body, on_response, on_failure);
     }
 
     void destroy(const std::string &url, const std::map<std::string, std::string> &headers,
-                 const std::function<void(int status_code,
-                                    const std::string &response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
+                 const std::function<void(const amqhi::HttpResponse& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         executeHttp("destroy", url, headers, on_response, on_failure);
     }
 
-    void put_file(const std::string& url, const std::map<std::string, std::string>& headers, const std::string& file_path, const nlohmann::json& task_info, const std::function<void(int status_code, const std::string& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
+    void put_file(const std::string& url, const std::map<std::string, std::string>& headers, const std::string& file_path, const nlohmann::json& task_info, const std::function<void(const amqhi::HttpResponse& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         JNIEnv *env = getEnv();
         jclass clazz = env->GetObjectClass(java_provider_global_);
@@ -150,34 +146,7 @@ public:
         env->DeleteLocalRef(jcallback);
     }
 
-    void put_file(const nlohmann::json& parts, const std::string& mime_type, const std::string& file_path, const nlohmann::json& task_info, const std::function<void(int status_code, const std::string& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
-    {
-        JNIEnv *env = getEnv();
-        jclass clazz = env->GetObjectClass(java_provider_global_);
-
-        jmethodID methodId = env->GetMethodID(clazz, "putMultipartFile",
-                                              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/amqhi/cloud/core/NetworkCallback;)V");
-
-        std::string parts_string = parts.dump();
-        JString jParts(env, parts_string);
-        JString jMimeType(env, mime_type);
-        jstring jfile_path = env->NewStringUTF(file_path.c_str());
-
-        //This struct is freed when the Android callback executes, so you don't have to free it.
-        auto* context = new CallbackContext{on_response, on_failure};
-
-        jclass cbProxyClass = env->FindClass("com/amqhi/cloud/core/NetworkCallback");
-        jmethodID cbInit = env->GetMethodID(cbProxyClass, "<init>", "(J)V");
-        jobject jcallback = env->NewObject(cbProxyClass, cbInit, reinterpret_cast<jlong>(context));
-        JString jTaskInfo(env, task_info.dump());
-
-        env->CallVoidMethod(java_provider_global_, methodId, jParts.value, jMimeType.value, jfile_path, jTaskInfo.value, jcallback);
-
-        env->DeleteLocalRef(jfile_path);
-        env->DeleteLocalRef(jcallback);
-    }
-
-    void download_file(const std::string& url, const std::map<std::string, std::string>& headers, const std::string& file_path, const nlohmann::json& task_info, const std::function<void(int status_code, const std::string& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
+    void download_file(const std::string& url, const std::map<std::string, std::string>& headers, const std::string& file_path, const nlohmann::json& task_info, const std::function<void(const amqhi::HttpResponse& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         JNIEnv *env = getEnv();
         jclass clazz = env->GetObjectClass(java_provider_global_);
@@ -201,7 +170,7 @@ public:
     }
 
     void post(const std::string& url, const std::map<std::string, std::string>& headers,
-        const std::function<void(int status_code, const std::string& response)>& on_response,
+        const std::function<void(const amqhi::HttpResponse& response)>& on_response,
         const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         executeHttp("post", url, headers, on_response, on_failure);
