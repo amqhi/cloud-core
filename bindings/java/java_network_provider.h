@@ -90,7 +90,7 @@ public:
         env->DeleteLocalRef(jcallback);
     }
 
-    void post_json(
+    void post_impl(
             const std::string &url,
             const std::map<std::string, std::string> &headers,
             const nlohmann::json &body,
@@ -100,27 +100,27 @@ public:
         executeHttp("postJson", url, headers, body, on_response, on_failure);
     }
 
-    void get(const std::string &url, const std::map<std::string, std::string> &headers,
+    void get_impl(const std::string &url, const std::map<std::string, std::string> &headers,
              const std::function<void(const amqhi::HttpResponse& response)>& on_response,
                                    const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         executeHttp("get", url, headers, on_response, on_failure);
     }
 
-    void patch_json(const std::string &url, const std::map<std::string, std::string> &headers,
+    void patch_impl(const std::string &url, const std::map<std::string, std::string> &headers,
                     const nlohmann::json &body, const std::function<void(const amqhi::HttpResponse& response)>& on_response,
                                                                       const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         executeHttp("patchJson", url, headers, body, on_response, on_failure);
     }
 
-    void destroy(const std::string &url, const std::map<std::string, std::string> &headers,
+    void destroy_impl(const std::string &url, const std::map<std::string, std::string> &headers,
                  const std::function<void(const amqhi::HttpResponse& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         executeHttp("destroy", url, headers, on_response, on_failure);
     }
 
-    void put_file(const std::string& url, const std::map<std::string, std::string>& headers, const std::string& file_path, const nlohmann::json& task_info, const std::function<void(const amqhi::HttpResponse& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
+    void put_file_impl(const std::string& url, const std::map<std::string, std::string>& headers, const std::string& file_path, const nlohmann::json& task_info, const std::function<void(const amqhi::HttpResponse& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         JNIEnv *env = getEnv();
         jclass clazz = env->GetObjectClass(java_provider_global_);
@@ -146,7 +146,7 @@ public:
         env->DeleteLocalRef(jcallback);
     }
 
-    void download_file(const std::string& url, const std::map<std::string, std::string>& headers, const std::string& file_path, const nlohmann::json& task_info, const std::function<void(const amqhi::HttpResponse& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
+    void download_file_impl(const std::string& url, const std::map<std::string, std::string>& headers, const std::string& file_path, const nlohmann::json& task_info, const std::function<void(const amqhi::HttpResponse& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         JNIEnv *env = getEnv();
         jclass clazz = env->GetObjectClass(java_provider_global_);
@@ -169,11 +169,16 @@ public:
         env->DeleteLocalRef(jCallback);
     }
 
-    void post(const std::string& url, const std::map<std::string, std::string>& headers,
+    void post_impl(const std::string& url, const std::map<std::string, std::string>& headers,
         const std::function<void(const amqhi::HttpResponse& response)>& on_response,
         const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
     {
         executeHttp("post", url, headers, on_response, on_failure);
+    }
+
+    void put_impl(const std::string& url, const std::map<std::string, std::string>& headers, const nlohmann::json& body, const std::function<void(const amqhi::HttpResponse& response)>& on_response, const std::function<void(std::int16_t error_code, const std::string& data)>& on_failure) override
+    {
+        executeHttp("putJson", url, headers, on_response, on_failure);
     }
 };
 
