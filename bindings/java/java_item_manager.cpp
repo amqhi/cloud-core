@@ -343,3 +343,10 @@ JNI_ITEM_MANAGER_FUNCTION(void, makeItemAvailableOffline)(COMMON_PARAMS, SIMPLE_
     SIMPLE_UUID_FROM_PARAMS(id)
     core->item_manager().make_item_available_offline(id);
 }
+
+JNI_ITEM_MANAGER_FUNCTION(void, makeItemOnlineOnly)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
+{
+    CORE(ptr)
+    SIMPLE_UUID_FROM_PARAMS(id)
+    core->item_manager().make_item_online_only(id);
+}
