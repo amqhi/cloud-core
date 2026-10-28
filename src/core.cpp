@@ -13,6 +13,7 @@
 #include "platform_utils.h"
 
 namespace fs = std::filesystem;
+using namespace event_code;
 
 Core::Core(std::string app_support_path, INetworkProvider& network_provider,
            ISecureStorageProvider& secure_storage_provider,
