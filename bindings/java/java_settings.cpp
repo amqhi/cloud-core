@@ -33,3 +33,15 @@ JNI_SETTINGS_FUNCTION(void, setInstanceUrl)(COMMON_PARAMS,
 
     core->settings().set_instance_url(instanceUrl);
 }
+
+JNI_SETTINGS_FUNCTION(jchar, getNavigationBarStyle)(COMMON_PARAMS) {
+    CORE(ptr)
+    return static_cast<jchar>(core->settings().android_navigation_bar_style());
+}
+
+JNI_SETTINGS_FUNCTION(void, setNavigationBarStyle)(COMMON_PARAMS,
+                                                jchar style)
+{
+    CORE(ptr)
+    core->settings().set_android_navigation_bar_style(static_cast<char>(style));
+}
