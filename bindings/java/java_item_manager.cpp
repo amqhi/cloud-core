@@ -107,13 +107,24 @@ JNI_ITEM_MANAGER_FUNCTION(void, createFile)(COMMON_PARAMS,
     core->item_manager().create_file(cpp_attributes, tmp_file_path);
 }
 
+JNI_ITEM_MANAGER_FUNCTION(jstring, getItemOfflineFilePathById)(
+    COMMON_PARAMS,
+    SIMPLE_UUID_PARAMS
+    )
+{
+    CORE(ptr)
+    SIMPLE_UUID_FROM_PARAMS(id)
+    jstring jFilePath = env->NewStringUTF(core->item_manager().item_offline_file_path_by_id(id).c_str());
+    return jFilePath;
+}
+
 JNI_ITEM_MANAGER_FUNCTION(jobject, getItemById)(
         COMMON_PARAMS,
         SIMPLE_UUID_PARAMS
 )
  {
     CORE(ptr)
-     SIMPLE_UUID_FROM_PARAMS(id);
+     SIMPLE_UUID_FROM_PARAMS(id)
     const Item& item = core->item_manager().item_by_id(id);
 
     jclass item_class = env->FindClass("com/amqhi/cloud/core/Item");
