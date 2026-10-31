@@ -4,6 +4,7 @@
 
 #include "cached_state.h"
 #include "json.hpp"
+#include "json_utils.h"
 
 CachedState::CachedState(const std::string& app_support_path) : CachedStateBase(app_support_path)
 {
@@ -40,4 +41,6 @@ void CachedState::initialize(const nlohmann::json& data)
             }
         }
     }
+
+    m_last_update_check = json_utils::get_int<std::int64_t>(data, "last_update_check");
 }
