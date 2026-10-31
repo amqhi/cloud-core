@@ -9,6 +9,12 @@
 extern "C" JNIEXPORT type JNICALL \
 Java_com_amqhi_cloud_core_CachedState_##name
 
+JNI_CACHED_STATE_FUNCTION(void, save)(COMMON_PARAMS)
+{
+    CORE(ptr)
+    core->cached_state().save();
+}
+
 JNI_CACHED_STATE_FUNCTION(jchar, getSortOption)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
 {
     CORE(ptr)
@@ -32,3 +38,16 @@ JNI_CACHED_STATE_FUNCTION(jchar, getViewMode)(COMMON_PARAMS, SIMPLE_UUID_PARAMS)
     char option = core->cached_state().view_mode(folder_id);
     return option;
 }
+
+JNI_CACHED_STATE_FUNCTION(jlong, getLastUpdateCheck)(COMMON_PARAMS)
+{
+    CORE(ptr)
+    return static_cast<jlong>(core->cached_state().last_update_check());
+}
+
+JNI_CACHED_STATE_FUNCTION(void, updateLastUpdateCheck)(COMMON_PARAMS)
+{
+    CORE(ptr)
+    core->cached_state().update_last_update_check();
+}
+
