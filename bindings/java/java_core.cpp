@@ -67,6 +67,11 @@ JNI_CORE_FUNCTION(void, onResume)(COMMON_PARAMS) {
     core->on_resume();
 }
 
+JNI_CORE_FUNCTION(void, onNetworkReconnect)(COMMON_PARAMS) {
+    CORE(ptr)
+    core->on_network_reconnect();
+}
+
 JNI_CORE_FUNCTION(void, addUser)(COMMON_PARAMS) {
     CORE(ptr)
     core->add_user();
