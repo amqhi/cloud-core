@@ -18,29 +18,5 @@ void CachedState::bind_data(nlohmann::json& data)
 
 void CachedState::initialize(const nlohmann::json& data)
 {
-    if (auto it = data.find("sort_options"); it != data.end() && it->is_object())
-    {
-        for (const auto& [key_str, value] : it->items())
-        {
-            UUID uuid = UUID::from_string(key_str);
-            if (value.is_number_integer())
-            {
-                m_sort_options[uuid] = static_cast<char>(value.get<int>());
-            }
-        }
-    }
 
-    if (auto it = data.find("view_modes"); it != data.end() && it->is_object())
-    {
-        for (const auto& [key_str, value] : it->items())
-        {
-            UUID uuid = UUID::from_string(key_str);
-            if (value.is_number_integer())
-            {
-                m_view_modes[uuid] = static_cast<char>(value.get<int>());
-            }
-        }
-    }
-
-    m_last_update_check = json_utils::get_int<std::int64_t>(data, "last_update_check");
 }

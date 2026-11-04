@@ -243,6 +243,22 @@ JNI_ITEM_MANAGER_FUNCTION(jobject, getFolderMetadataById)(COMMON_PARAMS, SIMPLE_
     return metadata;
 }
 
+JNI_ITEM_MANAGER_FUNCTION(jchar, getFolderViewModeById)(
+    COMMON_PARAMS, SIMPLE_UUID_PARAMS)
+{
+    CORE(ptr)
+    SIMPLE_UUID_FROM_PARAMS(id)
+    return static_cast<jchar>(core->item_manager().folder_view_mode_by_id(id));
+}
+
+JNI_ITEM_MANAGER_FUNCTION(jchar, getFolderSortOptionById)(
+    COMMON_PARAMS, SIMPLE_UUID_PARAMS)
+{
+    CORE(ptr)
+    SIMPLE_UUID_FROM_PARAMS(id)
+    return static_cast<jchar>(core->item_manager().folder_sort_option_by_id(id));
+}
+
 JNI_ITEM_MANAGER_FUNCTION(void, downloadThumbnail)(
     COMMON_PARAMS,
     SIMPLE_UUID_PARAMS)

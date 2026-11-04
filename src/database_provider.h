@@ -11,10 +11,13 @@ class Core;
 
 class DatabaseProvider : public DatabaseProviderBase
 {
-    public:
-        explicit DatabaseProvider(Core& core);
+#define VERSION 0
+public:
+    explicit DatabaseProvider(Core& core);
+    int version() override;
 
-private:
+protected:
+    void migrate(int old_version) const override;
     std::filesystem::path database_name() override;
 };
 
