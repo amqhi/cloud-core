@@ -1,0 +1,42 @@
+{
+    "include_dirs": [
+        "src",
+        "src/utils",
+        "src/models"
+    ],
+    "sources": [
+        "src/api.cpp",
+        "src/api.h",
+        "src/core.cpp",
+        "src/core.h",
+        "src/item_manager.cpp",
+        "src/item_manager.h",
+        "src/cached_state.cpp",
+        "src/cached_state.h",
+        "src/settings.cpp",
+        "src/settings.h",
+        "src/utils/item_utils.cpp",
+        "src/utils/item_utils.h",
+        "src/notifier.h",
+        "src/network_provider.h",
+        "src/database_provider.cpp",
+        "src/database_provider.h",
+        "src/secure_storage_provider.h",
+        "src/platform_utils.h"
+    ],
+    "java_include_dirs": [
+        "bindings/java"
+    ],
+    "java_sources": [
+        "bindings/java/java_binding_macros.h",
+        "bindings/java/java_cached_state.cpp",
+        "bindings/java/java_core.cpp",
+        "bindings/java/java_item_manager.cpp",
+        "bindings/java/java_network_callback.cpp",
+        "bindings/java/java_network_provider.h",
+        "bindings/java/java_notifier.h",
+        "bindings/java/java_platform_utils.h",
+        "bindings/java/java_secure_storage_provider.h",
+        "bindings/java/java_settings.cpp"
+    ]
+}

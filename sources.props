@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <CloudIncludeDirs>$(MSBuildThisFileDirectory)src;$(MSBuildThisFileDirectory)src\utils;$(MSBuildThisFileDirectory)src\models;</CloudIncludeDirs>
+    <CloudJavaBindingIncludeDirs>$(MSBuildThisFileDirectory)bindings\java;</CloudJavaBindingIncludeDirs>
+  </PropertyGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\api.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\core.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\item_manager.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\cached_state.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\settings.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\utils\item_utils.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\database_provider.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)bindings\java\java_cached_state.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)bindings\java\java_core.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)bindings\java\java_item_manager.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)bindings\java\java_network_callback.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)bindings\java\java_settings.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\api.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\core.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\item_manager.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\cached_state.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\settings.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\utils\item_utils.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\notifier.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\network_provider.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\database_provider.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\secure_storage_provider.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\platform_utils.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)bindings\java\java_binding_macros.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)bindings\java\java_network_provider.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)bindings\java\java_notifier.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)bindings\java\java_platform_utils.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)bindings\java\java_secure_storage_provider.h" />
+  </ItemGroup>
+</Project>
