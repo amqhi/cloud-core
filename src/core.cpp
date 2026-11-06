@@ -15,10 +15,10 @@
 namespace fs = std::filesystem;
 using namespace event_code;
 
-Core::Core(std::string app_support_path, INetworkProvider& network_provider,
-           ISecureStorageProvider& secure_storage_provider,
-           INotifier& notifier, IPlatformUtils& platform_utils)
-    : CoreBase(std::move(app_support_path), network_provider, secure_storage_provider, notifier, platform_utils)
+Core::Core(std::string app_support_path, std::unique_ptr<INetworkProvider> network_provider,
+                   std::unique_ptr<ISecureStorageProvider> secure_storage_provider,
+                   std::unique_ptr<INotifier> notifier, std::unique_ptr<IPlatformUtils> platform_utils)
+    : CoreBase(std::move(app_support_path), std::move(network_provider), std::move(secure_storage_provider), std::move(notifier), std::move(platform_utils))
 {
     // TODO: extract initializing pointer members and users logic into base class
     m_cached_state = std::make_unique<CachedState>(m_app_support_path);
@@ -78,7 +78,7 @@ void Core::initialize()
     m_database_provider->initialize_database();
     m_item_manager->initialize();
 
-    std::string tokens_string = m_secure_storage_provider.get_secure_string(m_selected_user_id, "");
+    std::string tokens_string = m_secure_storage_provider->get_secure_string(m_selected_user_id, "");
     if (!tokens_string.empty())
     {
         auto tokens_json = nlohmann::json::parse(tokens_string, nullptr, false);
@@ -94,11 +94,11 @@ void Core::initialize()
     {
         if (selected_user()->email.empty())
         {
-            m_notifier.notify(LOGIN_REQUIRED);
+            m_notifier->notify(LOGIN_REQUIRED);
         }
         else
         {
-            m_notifier.notify(RE_LOGIN_REQUIRED);
+            m_notifier->notify(RE_LOGIN_REQUIRED);
         }
 
     }

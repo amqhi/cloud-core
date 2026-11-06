@@ -17,33 +17,26 @@ JNI_CORE_FUNCTION(jlong, initCore)(
         JNIEnv* env,
         jobject _,
         jstring appSupportPath,
-        jobject networkProvider,
-        jobject securityProvider,
-        jobject notifier,
-        jobject platformUtils) {
+        jobject jNetworkProvider,
+        jobject jSecurityProvider,
+        jobject jNotifier,
+        jobject jPlatformUtils) {
 
     const char* path_chars = env->GetStringUTFChars(appSupportPath, nullptr);
-    std::string cpp_app_support_path(path_chars);
+    std::string appStoragePath(path_chars);
     env->ReleaseStringUTFChars(appSupportPath, path_chars);
 
-    jobject globalNetwork = env->NewGlobalRef(networkProvider);
-    jobject globalSecurity = env->NewGlobalRef(securityProvider);
-    jobject globalNotifier = env->NewGlobalRef(notifier);
-    jobject globalPlatformUtils = env->NewGlobalRef(platformUtils);
-
-    auto* cpp_network = new JavaNetworkProvider(env, globalNetwork);
-    auto* cpp_security = new JavaSecureStorageProvider(env, globalSecurity);
-    auto* cpp_notifier = new JavaNotifier(env, globalNotifier);
-    auto* cpp_platform_utils = new JavaPlatformUtils(env, globalPlatformUtils);
+    jobject globalNetwork = env->NewGlobalRef(jNetworkProvider);
+    jobject globalSecurity = env->NewGlobalRef(jSecurityProvider);
+    jobject globalNotifier = env->NewGlobalRef(jNotifier);
+    jobject globalPlatformUtils = env->NewGlobalRef(jPlatformUtils);
 
     Core* core = new Core(
-            cpp_app_support_path,
-            *cpp_network,
-            *cpp_security,
-            *cpp_notifier,
-            *cpp_platform_utils
-
-    );
+       appStoragePath,
+       std::make_unique<JavaNetworkProvider>(env, globalNetwork),
+       std::make_unique<JavaSecureStorageProvider>(env, globalSecurity),
+       std::make_unique<JavaNotifier>(env, globalNotifier),
+       std::make_unique<JavaPlatformUtils>(env, globalPlatformUtils));
     return reinterpret_cast<jlong>(core);
 }
 

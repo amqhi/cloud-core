@@ -23,8 +23,9 @@ class INotifier;
 class Core : public CoreBase
 {
 public:
-    explicit Core(std::string app_support_path, INetworkProvider& network_provider,
-                  ISecureStorageProvider& secure_storage_provider, INotifier& notifier, IPlatformUtils& platform_utils);
+    explicit Core(std::string app_support_path, std::unique_ptr<INetworkProvider> network_provider,
+                      std::unique_ptr<ISecureStorageProvider> secure_storage_provider,
+                      std::unique_ptr<INotifier> notifier, std::unique_ptr<IPlatformUtils> platform_utils);
     void initialize() override;
 
 private:
