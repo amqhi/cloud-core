@@ -97,24 +97,53 @@ def generate_msbuild_props(defs):
         rel = pathlib.Path(p).relative_to(ROOT_DIR)
         return f"$(MSBuildThisFileDirectory){str(rel).replace('/', '\\')}"
 
+    def compile_entry(ms_path, *, java=False, compile_as_c=False):
+        attrs = []
+        if java:
+            attrs.append('Condition="\'$(IncludeJavaBindings)\' == \'true\'"')
+        lines = [f'    <ClCompile Include="{ms_path}"' + (f' {attrs[0]}' if attrs else '') + '>']
+        lines.append('      <PrecompiledHeader>NotUsing</PrecompiledHeader>')
+        if compile_as_c:
+            lines.append('      <CompileAs>CompileAsC</CompileAs>')
+        lines.append('    </ClCompile>')
+        return '\n'.join(lines)
+
+    def include_entry(ms_path, *, java=False):
+        if java:
+            return (
+                f'    <ClInclude Include="{ms_path}" '
+                f'Condition="\'$(IncludeJavaBindings)\' == \'true\'" />'
+            )
+        return f'    <ClInclude Include="{ms_path}" />'
+
     include_dirs_str = ";".join([to_msbuild_path(p) for p in defs["include_dirs"]]) + ";"
     java_include_dirs_str = ";".join([to_msbuild_path(p) for p in defs["java_include_dirs"]]) + ";"
 
     cl_compile, cl_include = [], []
-    for src in defs["sources"] + defs["java_sources"]:
+    for src in defs["sources"]:
         p = pathlib.Path(src)
         ms_path = to_msbuild_path(p)
         ext = p.suffix.lower()
         if ext in [".cpp", ".c", ".cc", ".cxx"]:
-            cl_compile.append(f'    <ClCompile Include="{ms_path}" />')
+            cl_compile.append(compile_entry(ms_path, compile_as_c=(ext == ".c")))
         elif ext in [".h", ".hpp", ".hxx"]:
-            cl_include.append(f'    <ClInclude Include="{ms_path}" />')
+            cl_include.append(include_entry(ms_path))
+
+    for src in defs["java_sources"]:
+        p = pathlib.Path(src)
+        ms_path = to_msbuild_path(p)
+        ext = p.suffix.lower()
+        if ext in [".cpp", ".c", ".cc", ".cxx"]:
+            cl_compile.append(compile_entry(ms_path, java=True))
+        elif ext in [".h", ".hpp", ".hxx"]:
+            cl_include.append(include_entry(ms_path, java=True))
 
     xml_content = f"""<?xml version="1.0" encoding="utf-8"?>
+<!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <CloudIncludeDirs>{include_dirs_str}</CloudIncludeDirs>
-    <CloudJavaBindingIncludeDirs>{java_include_dirs_str}</CloudJavaBindingIncludeDirs>
+    <CloudIncludeDirs>$(CloudIncludeDirs){include_dirs_str}</CloudIncludeDirs>
+    <CloudJavaBindingIncludeDirs>$(CloudJavaBindingIncludeDirs){java_include_dirs_str}</CloudJavaBindingIncludeDirs>
   </PropertyGroup>
   <ItemGroup>
 {'\n'.join(cl_compile)}
