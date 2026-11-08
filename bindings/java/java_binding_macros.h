@@ -6,12 +6,12 @@
 #define COMMON_PARAMS JNIEnv* env, jobject thiz, jlong ptr
 
 #define SIMPLE_UUID_PARAMS jlong jIdHigh, jlong jIdLow
-#define SIMPLE_UUID_FROM_PARAMS(name) UUID name{}; \
+#define SIMPLE_UUID_FROM_PARAMS(name) amqhi::UUID name{}; \
 name.high = static_cast<std::uint64_t>(jIdHigh); \
 name.low = static_cast<std::uint64_t>(jIdLow);
 
 #define UUID_PARAMS(name) jlong name##High, jlong name##Low
-#define UUID_FROM_PARAMS(name) UUID name{}; \
+#define UUID_FROM_PARAMS(name) amqhi::UUID name{}; \
 name.high = static_cast<std::uint64_t>(name##High); \
 name.low = static_cast<std::uint64_t>(name##Low);
 

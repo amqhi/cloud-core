@@ -6,6 +6,8 @@
 #include "java_item.h"
 #include "java_long.h"
 
+using namespace amqhi;
+
 #define JNI_ITEM_MANAGER_FUNCTION(type, name) \
 extern "C" JNIEXPORT type JNICALL \
 Java_com_amqhi_cloud_core_ItemManager_##name
