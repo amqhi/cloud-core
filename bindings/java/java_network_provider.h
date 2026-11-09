@@ -7,6 +7,7 @@
 #include "java_map.h"
 #include "network_provider.h"
 #include "network_provider_base.h"
+#include "java_network_callback.h"
 
 class JavaNetworkProvider : public INetworkProvider {
 private:
@@ -20,12 +21,7 @@ private:
         }
         return env;
     }
-
-    struct CallbackContext {
-        std::function<void(const amqhi::HttpResponse&)> response;
-        std::function<void(std::int16_t, const std::string &)> failure;
-    };
-
+    
 public:
     JavaNetworkProvider(JNIEnv *env, jobject java_provider) {
         env->GetJavaVM(&jvm_);
