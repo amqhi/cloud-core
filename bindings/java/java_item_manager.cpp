@@ -22,7 +22,7 @@ JNI_ITEM_MANAGER_FUNCTION(jobjectArray, getItemSummaryListById)(
     folderId.high = jFolderIdHigh;
     folderId.low = jFolderIdLow;
     const auto id_list = core->item_manager().id_list_by_id(folderId);
-    jclass summaryClass = env->FindClass("com/amqhi/cloud/core/ItemSummary");
+    jclass summaryClass = env->FindClass("com/amqhi/shared/core/ItemSummary");
     auto array_size = static_cast<jsize>(id_list.size());
     jobjectArray array = env->NewObjectArray(array_size, summaryClass, nullptr);
     for (int i = 0; i < id_list.size(); i++)
@@ -184,7 +184,7 @@ JNI_ITEM_MANAGER_FUNCTION(jobject, getFileMetadataById)(COMMON_PARAMS, SIMPLE_UU
 CORE(ptr)
     SIMPLE_UUID_FROM_PARAMS(id)
     const FileMetadata& file_metadata = core->item_manager().file_metadata_by_id(id);
-    jclass clazz = env->FindClass("com/amqhi/cloud/core/FileMetadata");
+    jclass clazz = env->FindClass("com/amqhi/shared/core/FileMetadata");
     jmethodID methodId = env->GetMethodID(clazz, "<init>",
                                             "(Ljava/lang/String;Ljava/lang/String;J)V");
     JString checksum(env, file_metadata.checksum);
@@ -210,7 +210,7 @@ JNI_ITEM_MANAGER_FUNCTION(jobject, getFolderMetadataById)(COMMON_PARAMS, SIMPLE_
     CORE(ptr)
         SIMPLE_UUID_FROM_PARAMS(id)
     const FolderMetadata& folder_metadata = core->item_manager().folder_metadata_by_id(id);
-        jclass clazz = env->FindClass("com/amqhi/cloud/core/FolderMetadata");
+        jclass clazz = env->FindClass("com/amqhi/shared/core/FolderMetadata");
     jmethodID methodId = env->GetMethodID(clazz, "<init>",
                                             "(Ljava/util/UUID;Ljava/util/UUID;Ljava/lang/Integer;Ljava/lang/Integer;)V");
     JUUID backgroundId(env, folder_metadata.background_id.high, folder_metadata.background_id.low);

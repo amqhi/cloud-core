@@ -46,7 +46,7 @@ public:
         jclass clazz = env->GetObjectClass(java_provider_global_);
 
         jmethodID methodId = env->GetMethodID(clazz, methodName,
-                                              "(Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Lcom/amqhi/cloud/core/NetworkCallback;)V");
+                                              "(Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Lcom/amqhi/shared/core/NetworkCallback;)V");
 
         jstring jurl = env->NewStringUTF(url.c_str());
         JMap jHeaders(env, headers);
@@ -56,7 +56,7 @@ public:
         //This struct is freed when the Android callback executes, so you don't have to free it.
         auto* context = new CallbackContext{on_response, on_failure};
 
-        jclass cbProxyClass = env->FindClass("com/amqhi/cloud/core/NetworkCallback");
+        jclass cbProxyClass = env->FindClass("com/amqhi/shared/core/NetworkCallback");
         jmethodID cbInit = env->GetMethodID(cbProxyClass, "<init>", "(J)V");
         jobject jcallback = env->NewObject(cbProxyClass, cbInit, reinterpret_cast<jlong>(context));
 
@@ -72,7 +72,7 @@ public:
         jclass clazz = env->GetObjectClass(java_provider_global_);
 
         jmethodID methodId = env->GetMethodID(clazz, methodName,
-                                              "(Ljava/lang/String;Ljava/util/Map;Lcom/amqhi/cloud/core/NetworkCallback;)V");
+                                              "(Ljava/lang/String;Ljava/util/Map;Lcom/amqhi/shared/core/NetworkCallback;)V");
 
         jstring jurl = env->NewStringUTF(url.c_str());
         JMap jHeaders(env, headers);
@@ -80,7 +80,7 @@ public:
         //This struct is freed when the Android callback executes, so you don't have to free it.
         auto* context = new CallbackContext{on_response, on_failure};
 
-        jclass cbProxyClass = env->FindClass("com/amqhi/cloud/core/NetworkCallback");
+        jclass cbProxyClass = env->FindClass("com/amqhi/shared/core/NetworkCallback");
         jmethodID cbInit = env->GetMethodID(cbProxyClass, "<init>", "(J)V");
         jobject jcallback = env->NewObject(cbProxyClass, cbInit, reinterpret_cast<jlong>(context));
 
@@ -126,7 +126,7 @@ public:
         jclass clazz = env->GetObjectClass(java_provider_global_);
 
         jmethodID methodId = env->GetMethodID(clazz, "putFile",
-                                              "(Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Lcom/amqhi/cloud/core/NetworkCallback;)V");
+                                              "(Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Lcom/amqhi/shared/core/NetworkCallback;)V");
         jstring jurl = env->NewStringUTF(url.c_str());
         JMap jHeaders(env, headers);
         jstring jfile_path = env->NewStringUTF(file_path.c_str());
@@ -134,7 +134,7 @@ public:
         //This struct is freed when the Android callback executes, so you don't have to free it.
         auto* context = new CallbackContext{on_response, on_failure};
 
-        jclass cbProxyClass = env->FindClass("com/amqhi/cloud/core/NetworkCallback");
+        jclass cbProxyClass = env->FindClass("com/amqhi/shared/core/NetworkCallback");
         jmethodID cbInit = env->GetMethodID(cbProxyClass, "<init>", "(J)V");
         jobject jcallback = env->NewObject(cbProxyClass, cbInit, reinterpret_cast<jlong>(context));
         JString jTaskInfo(env, task_info.dump());
@@ -152,7 +152,7 @@ public:
         jclass clazz = env->GetObjectClass(java_provider_global_);
 
         jmethodID methodId = env->GetMethodID(clazz, "downloadFile",
-                                              "(Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Lcom/amqhi/cloud/core/NetworkCallback;)V");
+                                              "(Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Lcom/amqhi/shared/core/NetworkCallback;)V");
         JString jUrl(env, url);
         JMap jHeaders(env, headers);
         JString jFilePath(env, file_path);
@@ -160,7 +160,7 @@ public:
         // This struct is freed when the Android callback executes, so you don't have to free it.
         auto* context = new CallbackContext{on_response, on_failure};
 
-        jclass cbProxyClass = env->FindClass("com/amqhi/cloud/core/NetworkCallback");
+        jclass cbProxyClass = env->FindClass("com/amqhi/shared/core/NetworkCallback");
         jmethodID cbInit = env->GetMethodID(cbProxyClass, "<init>", "(J)V");
         jobject jCallback = env->NewObject(cbProxyClass, cbInit, reinterpret_cast<jlong>(context));
         JString jTaskInfo(env, task_info.dump());

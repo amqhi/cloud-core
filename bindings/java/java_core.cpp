@@ -114,7 +114,7 @@ JNI_CORE_FUNCTION(void, handleLogout)(COMMON_PARAMS) {
 
 JNI_CORE_FUNCTION(jobjectArray, getUsers)(COMMON_PARAMS) {
     CORE(ptr)
-    jclass userClass = env->FindClass("com/amqhi/cloud/core/User");
+    jclass userClass = env->FindClass("com/amqhi/shared/core/User");
     jmethodID userInit = env->GetMethodID(userClass, "<init>", "(CLjava/lang/String;Ljava/lang/String;SLjava/lang/String;)V");
     auto array_size = static_cast<jsize>(core->users().size());
     jobjectArray array = env->NewObjectArray(array_size, userClass, nullptr);
@@ -129,7 +129,7 @@ JNI_CORE_FUNCTION(jobjectArray, getUsers)(COMMON_PARAMS) {
 
 JNI_CORE_FUNCTION(jobjectArray, getUnselectedUsers)(COMMON_PARAMS) {
     CORE(ptr)
-    jclass userClass = env->FindClass("com/amqhi/cloud/core/User");
+    jclass userClass = env->FindClass("com/amqhi/shared/core/User");
     jmethodID userInit = env->GetMethodID(userClass, "<init>", "(CLjava/lang/String;Ljava/lang/String;SLjava/lang/String;)V");
     auto array_size = static_cast<jsize>(core->users().size() - 1);
     jobjectArray array = env->NewObjectArray(array_size, userClass, nullptr);
@@ -147,7 +147,7 @@ JNI_CORE_FUNCTION(jobjectArray, getUnselectedUsers)(COMMON_PARAMS) {
 
 JNI_CORE_FUNCTION(jobject, getSelectedUser)(COMMON_PARAMS) {
     CORE(ptr)
-    jclass userClass = env->FindClass("com/amqhi/cloud/core/User");
+    jclass userClass = env->FindClass("com/amqhi/shared/core/User");
     jmethodID userInit = env->GetMethodID(userClass, "<init>", "(CLjava/lang/String;Ljava/lang/String;SLjava/lang/String;)V");
     jobject jUser = user_to_juser(env, userClass, userInit, *core->selected_user());
     env->DeleteLocalRef(userClass);
