@@ -4,7 +4,6 @@
 #include "java_binding_macros.h"
 #include "java_integer.h"
 #include "java_item.h"
-#include "java_long.h"
 
 using namespace amqhi;
 
@@ -127,56 +126,7 @@ JNI_ITEM_MANAGER_FUNCTION(jobject, getItemById)(
  {
     CORE(ptr)
      SIMPLE_UUID_FROM_PARAMS(id)
-    const Item& item = core->item_manager().item_by_id(id);
-
-    jclass item_class = env->FindClass("com/amqhi/cloud/core/Item");
-    jmethodID constructor = env->GetMethodID(item_class, "<init>",
-                                             "(Ljava/util/UUID;CJJLjava/lang/Long;Ljava/lang/Long;Ljava/util/UUID;Ljava/lang/String;Ljava/lang/String;ZCS)V");
-    if (constructor == nullptr) return nullptr;
-
-    jclass longClass = env->FindClass("java/lang/Long");
-    jmethodID longInitMethodId = env->GetMethodID(longClass, "<init>", "(J)V");
-
-     JUUID jId(env, id.high, id.low);
-    auto jType = static_cast<jchar>(item.type); // NOLINT
-     JUUID jParentId(env, item.parent_id.high, item.parent_id.low);
-     JString jName(env, item.name);
-     jstring jComment = nullptr;
-     if (item.comment.has_value())
-     {
-         jComment = env->NewStringUTF(item.comment.value().c_str());
-     }
-
-     JNullableLong jEventAt(env, item.event_at);
-
-    jobject jDeletedAt = nullptr;
-    if (item.deleted_at.has_value()) {
-        jDeletedAt = env->NewObject(longClass, longInitMethodId, static_cast<jlong>(item.deleted_at.value()));
-    }
-
-    jobject jItem = env->NewObject(item_class, constructor,
-                                      jId.value,
-                                      jType,
-                                      static_cast<jlong>(item.created_at),
-                                      static_cast<jlong>(item.updated_at),
-                                      jEventAt.value,
-                                      jDeletedAt,
-                                      jParentId.value,
-                                      jName.value,
-                                      jComment,
-                                      static_cast<jboolean>(item.encrypted),
-                                      static_cast<jchar>(item.status),
-                                      static_cast<jshort>(item.app_scope)
-    );
-
-     if (jComment != nullptr)
-     {
-         env->DeleteLocalRef(jComment);
-     }
-    if (jDeletedAt != nullptr) {
-        env->DeleteLocalRef(jDeletedAt);
-    }
-
+    jobject jItem = item_to_jobject(env, core->item_manager().item_by_id(id));
     return jItem;
 }
 
