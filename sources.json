@@ -32,7 +32,6 @@
         "bindings/java/java_cached_state.cpp",
         "bindings/java/java_core.cpp",
         "bindings/java/java_item_manager.cpp",
-        "bindings/java/java_network_callback.cpp",
         "bindings/java/java_network_provider.h",
         "bindings/java/java_notifier.h",
         "bindings/java/java_platform_utils.h",

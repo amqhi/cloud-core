@@ -44,7 +44,6 @@ def get_shared_definitions():
             ROOT_DIR / "bindings" / "java" / "java_cached_state.cpp",
             ROOT_DIR / "bindings" / "java" / "java_core.cpp",
             ROOT_DIR / "bindings" / "java" / "java_item_manager.cpp",
-            ROOT_DIR / "bindings" / "java" / "java_network_callback.cpp",
             ROOT_DIR / "bindings" / "java" / "java_network_provider.h",
             ROOT_DIR / "bindings" / "java" / "java_notifier.h",
             ROOT_DIR / "bindings" / "java" / "java_platform_utils.h",
